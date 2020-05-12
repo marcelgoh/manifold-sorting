@@ -1,0 +1,5 @@
+"Resource: /Users/marcel/GitHub/manifold-sorting/src/main.ml": "o\231\169|Mj\022;\167\138\001\222\213{\225["
+"Rule: ocaml: ml -> cmo & cmi (%=src/main )": "p\221\019NB\140\237\157\245\205\135\0231\000\003\200"
+"Rule: ocaml: cmx* & o* -> native (%=src/main )": "\168N\165;\004\157\135\233\200 \163\004W\155\237\137"
+"Rule: ocaml dependencies ml (%=src/main )": "\129$\249\137\193\019`B\205\155\028\161\206\185;\214"
+"Rule: ocaml: ml & cmi -> cmx & o (%=src/main )": "\234\205c\236j+\136N\011#e\168'\135g\200"
