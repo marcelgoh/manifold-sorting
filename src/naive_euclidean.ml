@@ -16,17 +16,18 @@ let iter_grid = D.iter
 let nearest_neighbour g p =
   if D.empty g then
     None
-  else
-    (* if D.length g = 0 then Printf.printf "How can this happen?\n";
-    (* this array stores pairs (dist_from_p, index) *) *)
+  else (
+    if D.length g = 0 then Printf.printf "How can this happen?\n";
+    (* this array stores pairs (dist_from_p, index) *)
     let dists : (float * int) D.t = D.make (D.length g) in
     (* iterate over the grid g to fill dists array *)
-    D.iteri (fun i q -> D.set dists 0 (dist p q, i)) g;
+    D.iteri (fun i q -> D.add dists (dist p q, i)) g;
     (* compares two dist pairs and keeps minimum *)
     let f (d1, i1) (d2, i2) = if d1 < d2 then (d1, i1) else (d2, i2) in
     (* get minimum over all dist pairs *)
     let (min_dist, i) = D.fold_left f (max_float, -1) dists in
     Some (D.get g i, min_dist)  (* return *)
+  )
 
 let add_to_grid g p =
   match nearest_neighbour g p with
