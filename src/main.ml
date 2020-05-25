@@ -7,11 +7,10 @@ module N = Naive_euclidean
 module P = Postscript
 
 let main () =
-  let grid = N.create_grid () in
-  N.add_to_grid grid (1.2, 2.4);
-  N.add_to_grid grid (3.1, 5.3);
-  N.add_to_grid grid (1.0, 1.0);
-  N.add_to_grid grid (0.0, 0.0);
-  P.plot_grid grid 50.0 50.0 "out/grid"
+  let start_time = Sys.time () in
+  let grid = N.fill_rect (-30.0) 30.0 30.0 (-30.0) 0.5 (0.0, 0.0) in
+  P.plot_grid grid 5.0 5.0 P.red P.blue "out/grid";
+  Printf.printf "Execution time: %fs\n" (Sys.time() -. start_time);
+  Printf.printf "%d points plotted.\n" (N.grid_size grid)
 
 let _ = main ()
