@@ -35,3 +35,6 @@ _build/
 
 # Test output
 test/*.txt
+
+# PostScript output
+*.ps

@@ -3,13 +3,42 @@
 module D = DynArray
 module S = Stack
 
+exception Zero_determinant
+
 type point = float * float
 type grid = point D.t
 
 let create_grid () : point D.t = D.create ()
-let grid_size g = D.length g
+let grid_size = D.length
+
+let add_points (x1, y1) (x2, y2) = (x1 +. x2, y1 +. y2)
+let scale_point alpha (x, y) = (alpha *. x, alpha *. y)
+
+let mat_vec_mul (a, b, c, d) (x, y) = (a *. x +. b *. y, c *. x +. d *. y)
 
 let dist (x1, y1) (x2, y2) = sqrt ((x1 -. x2) ** 2.0 +. (y1 -. y2) ** 2.0)
+
+(* compute quotient distance by copying query point into all neighbouring domains *)
+let quotient_dist u v p1 p2 =
+  let nu = scale_point (-1.0) u in
+  let nv = scale_point (-1.0) v in
+  let candidates = [  (* the candidates in all neighbouring domains *)
+    p1; add_points p1 u; add_points p1 v; add_points (add_points p1 v) u;
+    add_points p1 nu; add_points p1 nv; add_points (add_points p1 nv) nu
+  ] in
+  let dists = List.map (fun c -> dist c p2) candidates in  (* nine distances *)
+  let min a b = if a < b then a else b in
+  List.fold_left min max_float dists  (* find minimum of distances *)
+
+(* get the representative within the parallelogram *)
+let get_representative (xu, yu) (xv, yv) p =
+  let det = xu *. yv -. xv *. yu in
+  if det = 0.0 then raise Zero_determinant;
+  let adjugate = (yv, (-. xv), (-. yu), xu) in
+  let (x, y) = scale_point (1.0 /. det) (mat_vec_mul adjugate p) in
+  let x_0 = x -. Float.floor x in  (* fractional part of x *)
+  let y_0 = y -. Float.floor y in  (* fractional part of y *)
+  mat_vec_mul (xu, xv, yu, yv) (x_0, y_0)  (* scale back up *)
 
 let iter_grid = D.iter
 
@@ -28,15 +57,15 @@ let offset_list = [
   (-0.75, 0.433);
 ]
 
-let nearest_neighbour g p =
+let nearest_neighbour u v g p =
   if D.empty g then
     None
   else (
-    if D.length g = 0 then Printf.printf "How can this happen?\n";
+    let quot_dist = quotient_dist u v in
     (* this array stores pairs (dist_from_p, index) *)
     let dists : (float * int) D.t = D.make (D.length g) in
     (* iterate over the grid g to fill dists array *)
-    D.iteri (fun i q -> D.add dists (dist p q, i)) g;
+    D.iteri (fun i q -> D.add dists (quot_dist p q, i)) g;
     (* compares two dist pairs and keeps minimum *)
     let f (d1, i1) (d2, i2) = if d1 < d2 then (d1, i1) else (d2, i2) in
     (* get minimum over all dist pairs *)
@@ -45,16 +74,17 @@ let nearest_neighbour g p =
   )
 
 (* returns a boolean flag indicating whether point was added *)
-let add_to_grid g threshold p =
-  match nearest_neighbour g p with
-    None -> D.add g p; true
-  | Some ((qx, qy), min_dist) ->
+let add_to_grid u v g threshold p =
+  let rep = get_representative u v p in
+  match nearest_neighbour u v g rep with
+    None -> D.add g rep; true
+  | Some (_, min_dist) ->
       (* let (px, py) = p in
       Printf.printf "(%f, %f) -- (%f, %f); min_dist = %f\n" px py qx qy min_dist; *)
-      if min_dist > threshold then (D.add g p; true) else false
+      if min_dist > threshold then (D.add g rep; true) else false
 
-(* the start point is assumed to be in the bounds *)
-let fill_rect left right top bottom threshold start_p =
+(* fills a parallelogram; the start point is assumed to be in the bounds *)
+let fill_para u v threshold start_p =
   let g = create_grid () in
   let stack = S.create () in
   S.push start_p stack;
@@ -64,16 +94,10 @@ let fill_rect left right top bottom threshold start_p =
     else
       let p = S.pop stack in
       let offsets = List.map (fun o -> offset o (threshold *. 2.0) p) offset_list in
-      let f (qx, qy) =
-        if qx >= left && qx <= right && qy <= top && qy >= bottom then
-          S.push (qx, qy) stack  (* push new point if within bounds *)
-      in
-      if add_to_grid g threshold p then
-        List.iter f offsets (* pushes 6 new points on stack *)
-      else ();
+      if add_to_grid u v g threshold p then
+        List.iter (fun q -> S.push q stack) offsets (* pushes 6 new points on stack *)
+      ;
       loop ()
   in
   loop ()
-
-
 
