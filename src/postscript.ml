@@ -57,7 +57,7 @@ let plot_grid fp stgs grid =
   let (r1, g1, b1) = stgs.colour1 in
   let (r2, g2, b2) = stgs.colour2 in
   let (xo, yo) = (stgs.xorigin, stgs.yorigin) in
-  let num_pts = float_of_int (N.grid_size grid) in
+  let num_pts = float_of_int (K.grid_size grid) in
   output_string fp (sprintf "%d %d translate\n0.5 setlinewidth\n" xo yo);
   output_string fp (sprintf "newpath 0 -%d moveto 0 %d lineto stroke\n" yo (yo + 792));
   output_string fp (sprintf "newpath -%d 0 moveto %d 0 lineto stroke\n" xo (xo + 612));
@@ -72,5 +72,5 @@ let plot_grid fp stgs grid =
     set_colour (r, g, b);
     output_string fp (sprintf "%f %f dot\n" (x *. stgs.xscale) (y *. stgs.yscale))
   in
-  D.iteri print_point grid;  (* print every point in the grid *)
+  List.iteri print_point (List.map (fun (a, _) -> a) (List.sort (fun (_, a) (_, b) -> compare a b) (K.tolist grid)));  (* print every point in the grid *)
   set_colour black
