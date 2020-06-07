@@ -3,7 +3,7 @@
 open Printf
 
 module D = DynArray
-module N = Naive_euclidean
+module K = Kd_euclidean
 
 let red = (1.0, 0.0, 0.0)
 let green = (0.101, 0.501, 0.0)
@@ -62,7 +62,9 @@ let plot_grid fp stgs grid =
   output_string fp (sprintf "newpath 0 -%d moveto 0 %d lineto stroke\n" yo (yo + 792));
   output_string fp (sprintf "newpath -%d 0 moveto %d 0 lineto stroke\n" xo (xo + 612));
   let set_colour (r, g, b) = output_string fp (sprintf "%f %f %f setrgbcolor\n" r g b) in
-  let print_point idx (x, y) =
+  let print_point idx p =
+    let x = List.nth p 0 in
+    let y = List.nth p 1 in
     let t = (float_of_int idx) /. num_pts in
     let r = r1 +. (r2 -. r1) *. t in
     let g = g1 +. (g2 -. g1) *. t in
