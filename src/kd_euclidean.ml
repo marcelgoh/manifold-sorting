@@ -4,28 +4,27 @@ module D = DynArray
 module S = Stack
 
 type point = float list
-type node =
-  {
-    axis : int;
-    pos :  float;
-    p : point;
-    left : tree;
-    right : tree;
-    n : int;
-  } and
-tree =
+
+type node_info = {
+  axis : int;
+  pos :  float;
+  p : point;
+  n : int;
+}
+
+type tree =
   | Empty
-  | Node of node
+  | Node of node_info * tree * tree
 
 let rec grid_size g =
   match g with
   | Empty -> 0
-  | Node { left; right } -> 1 + grid_size left + grid_size right
+  | Node (_, left, right)  -> 1 + grid_size left + grid_size right
 
 let rec tolist_l g l =
   match g with
   | Empty -> l
-  | Node { p; left; right; n } -> (p, n) :: tolist_l left (tolist_l right l)
+  | Node (info, left, right) -> (info.p, info.n) :: tolist_l left (tolist_l right l)
 
 let tolist g = tolist_l g []
 
@@ -35,8 +34,6 @@ let dist p1 p2 =
     | [], [] -> 0.
     | a1 :: q1, a2 :: q2 -> (a1 -. a2) ** 2. +. sumdiffsq q1 q2
   in sqrt (sumdiffsq p1 p2)
-
-let iter_grid = D.iter
 
 (* takes a point and offsets it by xoffset, yoffset *)
 let rec offset o mult p =
@@ -58,29 +55,49 @@ let offset_list = [
 let rec nearest_neighbour g p =
   match g with
   | Empty -> None
-  | Node {axis; pos; p=q; left; right} ->
-     let l = if List.nth p axis -. pos < 1. then nearest_neighbour left p else None in
-     let r = if List.nth p axis -. pos > -1. then nearest_neighbour right p else None in
+  | Node (info, left, right) ->
+     let l =
+       if List.nth p info.axis -. info.pos < 1. then
+         nearest_neighbour left p
+       else None
+     in
+     let r =
+       if List.nth p info.axis -. info.pos > -1. then
+         nearest_neighbour right p
+       else None
+     in
+     let q = info.p in
      match l, r with
      | None, None -> Some q
      | Some x, None -> Some (if dist p x < dist p q then x else q)
      | None, Some y -> Some (if dist p y < dist p q then y else q)
-     | Some x, Some y -> Some (if dist p x < dist p y then if dist p x < dist p q then x else q else if dist p y < dist p q then y else q)
+     | Some x, Some y -> Some (
+       if dist p x < dist p y then
+         if dist p x < dist p q then x
+         else q
+       else
+         if dist p y < dist p q then y
+         else q
+       )
 
 let rec insertaxis g p newaxis d n =
   match g with
-  | Empty -> Node {axis=newaxis; pos=List.nth p newaxis; p; left=Empty; right=Empty; n}
-  | Node {axis; pos; p=q; left; right} ->
-     let next = (axis + 1) mod d in
-     if List.nth p axis < pos
-     then Node {axis; pos; p=q; left=insertaxis left p next d n; right; n}
-     else Node {axis; pos; p=q; left; right=insertaxis right p next d n; n}
+  | Empty ->
+      let info = { axis = newaxis; pos = List.nth p newaxis; p = p; n = n } in
+      Node (info, Empty, Empty)
+  | Node (info, left, right) ->
+     let next = (info.axis + 1) mod d in
+     if List.nth p info.axis < info.pos
+     then Node (info, insertaxis left p next d info.n, right)
+     else Node (info, left, insertaxis right p next d info.n)
 
-let insert g p n = insertaxis g p (
-                       match g with
-                       | Empty -> 0
-                       | Node {axis; pos; p=q; left; right} -> axis
-                     ) (List.length p) n
+let insert g p n =
+  let newaxis =
+    match g with
+     | Empty -> 0
+     | Node (info, _, _) -> info.axis
+  in
+  insertaxis g p newaxis (List.length p) n
 
 (* returns a boolean flag indicating whether point was added *)
 let add_to_grid g threshold p n =
