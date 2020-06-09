@@ -10,6 +10,7 @@ type grid = point D.t
 
 let create_grid () : point D.t = D.create ()
 let grid_size = D.length
+let to_list g = List.map (fun (x,y) -> [x; y]) (D.to_list g)
 
 let add_points (x1, y1) (x2, y2) = (x1 +. x2, y1 +. y2)
 let scale_point alpha (x, y) = (alpha *. x, alpha *. y)

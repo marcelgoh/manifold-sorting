@@ -5,6 +5,8 @@ open Printf
 module D = DynArray
 module K = Kd_euclidean
 
+exception Postscript_error
+
 let red = (1.0, 0.0, 0.0)
 let green = (0.101, 0.501, 0.0)
 let blue = (0.0, 0.0, 1.0)
@@ -53,24 +55,25 @@ let close_ps_file fp =
   output_string fp "showpage\n";
   close_out fp
 
-let plot_grid fp stgs grid =
+let plot_grid fp stgs grid_list =
   let (r1, g1, b1) = stgs.colour1 in
   let (r2, g2, b2) = stgs.colour2 in
   let (xo, yo) = (stgs.xorigin, stgs.yorigin) in
-  let num_pts = float_of_int (K.grid_size grid) in
+  let num_pts = float_of_int (List.length grid_list) in
   output_string fp (sprintf "%d %d translate\n0.5 setlinewidth\n" xo yo);
   output_string fp (sprintf "newpath 0 -%d moveto 0 %d lineto stroke\n" yo (yo + 792));
   output_string fp (sprintf "newpath -%d 0 moveto %d 0 lineto stroke\n" xo (xo + 612));
   let set_colour (r, g, b) = output_string fp (sprintf "%f %f %f setrgbcolor\n" r g b) in
   let print_point idx p =
-    let x = List.nth p 0 in
-    let y = List.nth p 1 in
-    let t = (float_of_int idx) /. num_pts in
-    let r = r1 +. (r2 -. r1) *. t in
-    let g = g1 +. (g2 -. g1) *. t in
-    let b = b1 +. (b2 -. b1) *. t in
-    set_colour (r, g, b);
-    output_string fp (sprintf "%f %f dot\n" (x *. stgs.xscale) (y *. stgs.yscale))
+    match p with
+    | x :: y :: p' ->
+        let t = (float_of_int idx) /. num_pts in
+        let r = r1 +. (r2 -. r1) *. t in
+        let g = g1 +. (g2 -. g1) *. t in
+        let b = b1 +. (b2 -. b1) *. t in
+        set_colour (r, g, b);
+        output_string fp (sprintf "%f %f dot\n" (x *. stgs.xscale) (y *. stgs.yscale))
+    | _ -> raise Postscript_error
   in
-  List.iteri print_point (List.map (fun (a, _) -> a) (List.sort (fun (_, a) (_, b) -> compare a b) (K.tolist grid)));  (* print every point in the grid *)
+  List.iteri print_point grid_list;  (* print every point in the grid *)
   set_colour black

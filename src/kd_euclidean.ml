@@ -1,4 +1,4 @@
-(* Naive implementation of Euclidean space *)
+(* Kd implementation of Euclidean space *)
 
 module D = DynArray
 module S = Stack
@@ -21,12 +21,18 @@ let rec grid_size g =
   | Empty -> 0
   | Node (_, left, right)  -> 1 + grid_size left + grid_size right
 
-let rec tolist_l g l =
-  match g with
-  | Empty -> l
-  | Node (info, left, right) -> (info.p, info.n) :: tolist_l left (tolist_l right l)
+let to_list g =
+  let rec tolist_l g l =
+    match g with
+    | Empty -> l
+    | Node (info, left, right) -> (info.p, info.n) :: tolist_l left (tolist_l right l)
+  in
+  let compare (_, m) (_, n) = m - n in
+  let pair_list = tolist_l g [] in
+  let sorted = List.sort compare pair_list in
+  List.map fst sorted
 
-let tolist g = tolist_l g []
+
 
 let dist p1 p2 =
   let rec sumdiffsq x1 x2 =
