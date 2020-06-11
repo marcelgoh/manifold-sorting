@@ -6,6 +6,7 @@ module M =  Metric
 module N = Naive_euclidean
 module K = Kd_euclidean
 module P = Postscript
+module T = Test
 
 let naive_main () =
   let start_time = Sys.time () in
@@ -36,5 +37,4 @@ let kd_main () =
   Printf.printf "%d points plotted.\n" (K.grid_size grid)
 
 let _ =
-  naive_main ();
-  kd_main ()
+  T.run_para_test ()

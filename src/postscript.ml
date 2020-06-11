@@ -14,34 +14,35 @@ let black = (0.0, 0.0, 0.0)
 let purple = (0.5, 0.0, 1.0)
 
 type settings = {
-  xscale : float;
-  yscale : float;
+  scale : float;
   colour1 : float * float * float;
   colour2 : float * float * float;
   xorigin : int;
   yorigin : int;
+  draw_circle : float;  (* radius of circle to draw *)
 }
 
 let default = {
-  xscale = 5.0;
-  yscale = 5.0;
+  scale = 5.0;
   colour1 = red;
   colour2 = blue;
   xorigin = 306;
   yorigin = 396;
+  draw_circle = 0.0;
 }
 
 let file = "/out/plot"
 let preamble ="
 %!PS
 /dot { 1.5 0 360 arc closepath fill } def
+/circle { 0 360 arc closepath stroke } def
 /Courier findfont 9 scalefont setfont
 /ytick { newpath 0 exch moveto -5 0 rmoveto 10 0 rlineto stroke} def
 /xtick { newpath 0 moveto 0 -5 rmoveto 0 10 rlineto stroke} def
 "
 
 let xtick fp stgs (tick : int) =
-  let x = float_of_int tick *. stgs.xscale in
+  let x = float_of_int tick *. stgs.scale in
   output_string fp (sprintf "%f xtick\n" x);
   output_string fp (sprintf "%f -7 moveto (%d) show\n" x tick)
 
@@ -72,7 +73,11 @@ let plot_grid fp stgs grid_list =
         let g = g1 +. (g2 -. g1) *. t in
         let b = b1 +. (b2 -. b1) *. t in
         set_colour (r, g, b);
-        output_string fp (sprintf "%f %f dot\n" (x *. stgs.xscale) (y *. stgs.yscale))
+        output_string fp (sprintf "newpath %f %f dot\n" (x *. stgs.scale) (y *. stgs.scale));
+        if stgs.draw_circle <> 0.0 then (
+          let f a = a *. stgs.scale in
+          output_string fp (sprintf "%f %f %f circle\n" (f x) (f y) (f stgs.draw_circle))
+        )
     | _ -> raise Postscript_error
   in
   List.iteri print_point grid_list;  (* print every point in the grid *)

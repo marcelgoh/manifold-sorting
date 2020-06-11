@@ -32,8 +32,6 @@ let to_list g =
   let sorted = List.sort compare pair_list in
   List.map fst sorted
 
-
-
 let dist p1 p2 =
   let rec sumdiffsq x1 x2 =
     match x1, x2 with
@@ -141,6 +139,4 @@ let fill_rect left right top bottom threshold start_p =
       loop ()
   in
   loop ()
-
-
 
