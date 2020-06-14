@@ -26,11 +26,12 @@ let rec grid_size g =
   | Node (_, left, right)  -> 1 + grid_size left + grid_size right
 
 let get_representative (a, c) (b, d) [x; y] =
-  let det = (a *. d) -. (c *. b) in
-  let a', c', b', d' = d /. det, -.b /. det, -.c /. det, a /. det in
-  let x', y' = (a' *. x) +. (b' *. y), (c' *. x) +. (d' *. y) in
-  let x'', y'' = x' -. Float.floor x', y' -. Float.floor y' in
-  [a *. x'' +. b *. y''; c *. x'' +. d *. y'']
+  let (x', y') = N.get_representative (a, c) (b, d) (x, y) in [x'; y']
+  (* let det = (a *. d) -. (c *. b) in
+   * let a', c', b', d' = d /. det, -.b /. det, -.c /. det, a /. det in
+   * let x', y' = (a' *. x) +. (b' *. y), (c' *. x) +. (d' *. y) in
+   * let x'', y'' = x' -. Float.floor x', y' -. Float.floor y' in
+   * [a *. x'' +. b *. y''; c *. x'' +. d *. y''] *)
 
 let to_list g =
   let rec tolist_l g l =
@@ -188,11 +189,14 @@ let fill_para u v threshold start_p =
       grid
     else
       let p = S.pop stack in
+      (* Printf.printf "%f, %f " (List.nth p 0) (List.nth p 1); *)
       let (newgrid, added) = add_to_grid_para u v grid threshold p i in
+      (* Printf.printf "%sadded\n" (if added then "" else "not "); *)
       if added then
         let offsets = List.map (fun o -> offset o (threshold *. 2.0) p) offset_list in
-        List.iter (fun q -> S.push q stack) offsets (* pushes 6 new points on stack *)
-      else ();
-      loop newgrid (i + 1)
+        List.iter (fun q -> S.push q stack) offsets; (* pushes 6 new points on stack *)
+        loop newgrid (i + 1)
+      else
+        loop newgrid i
   in
   loop g 0

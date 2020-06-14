@@ -49,7 +49,8 @@ let run_para_test () =
     Printf.printf "%d points plotted.\n" (K.grid_size grid);
     (K.grid_size grid, fill_time)
   in
-  let thresholds = [1.21; 1.2; 1.19; 1.18; 1.17; 1.16; 1.15] in
-  List.mapi plot_one_threshold_kd thresholds
+  let thresholds = [1.21; 1.2; 1.19; 1.18; 1.17; 1.16; 1.15; 5.0] in
+  List.mapi plot_one_threshold_kd thresholds;
+  List.mapi plot_one_threshold_naive thresholds
 
 
