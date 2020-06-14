@@ -2,6 +2,7 @@
 
 module D = DynArray
 module S = Stack
+module N = Naive_euclidean
 
 type point = float list
 
@@ -49,9 +50,10 @@ let dist p1 p2 =
     | a1 :: q1, a2 :: q2 -> (a1 -. a2) ** 2. +. sumdiffsq q1 q2
   in sqrt (sumdiffsq p1 p2)
 
-let para_dist u v [x; y] p =
-  let [x'; y'] = get_representative u v [x; y] in
-  List.fold_left (fun a q -> min a (dist p q)) max_float (List.flatten (List.map (fun i -> (List.map (fun j -> [x' +. i; y' +. j]) [-1.; 0.; 1.])) [-1.; 0.; 1.]))
+let para_dist (u1, u2) (v1, v2) [x; y] p =
+  let p' = get_representative (u1, u2) (v1, v2) p in
+  let [x'; y'] = get_representative (u1, u2) (v1, v2) [x; y] in
+  List.fold_left (fun a q -> min a (dist p' q)) max_float (List.flatten (List.map (fun (i1, i2) -> (List.map (fun (j1, j2) -> [x' +. i1 +. j1; y' +. i2 +. j2]) [(-.u1, -.u2); (0., 0.); (u1, u2)])) [(-.v1, -.v2); (0., 0.); (v1, v2)]))
 
 (* takes a point and offsets it by xoffset, yoffset *)
 let rec offset o mult p =
@@ -140,11 +142,12 @@ let para_to_euclidean (a, c) (b, d) [x; y] =
   [cos (2. *. pi *. x'); cos (2. *. pi *. y')]
 
 let add_to_grid_para u v g threshold p n =
-  let p' = para_to_euclidean u v p in
+  let rep_p = get_representative u v p in
+  let p' = para_to_euclidean u v rep_p in
   let rect = (List.map (fun x -> (x -. threshold, x +. threshold)) p') in
-  let dists = List.map (fun q -> para_dist u v p q) (find_in_range g rect) in
+  let dists = List.map (fun [qx; qy] -> let [px; py] = rep_p in N.quotient_dist u v (px, py) (qx, qy)) (find_in_range g rect) in
   match List.find_opt (fun d -> d < threshold) dists with
-  | None -> (insert g p' n p, true)
+  | None -> (insert g p' n rep_p, true)
   | Some x ->  (g, false)
 
 (* the start point is assumed to be in the bounds *)
