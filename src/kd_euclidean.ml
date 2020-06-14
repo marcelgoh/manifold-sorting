@@ -24,11 +24,18 @@ let rec grid_size g =
   | Empty -> 0
   | Node (_, left, right)  -> 1 + grid_size left + grid_size right
 
+let get_representative (a, c) (b, d) [x; y] =
+  let det = (a *. d) -. (c *. b) in
+  let a', c', b', d' = d /. det, -.b /. det, -.c /. det, a /. det in
+  let x', y' = (a' *. x) +. (b' *. y), (c' *. x) +. (d' *. y) in
+  let x'', y'' = x' -. Float.floor x', y' -. Float.floor y' in
+  [a *. x'' +. b *. y''; c *. x'' +. d *. y'']
+
 let to_list g =
   let rec tolist_l g l =
     match g with
     | Empty -> l
-    | Node (info, left, right) -> (info.p, info.n) :: tolist_l left (tolist_l right l)
+    | Node (info, left, right) -> (info.p', info.n) :: tolist_l left (tolist_l right l)
   in
   let compare (_, m) (_, n) = m - n in
   let pair_list = tolist_l g [] in
@@ -42,12 +49,9 @@ let dist p1 p2 =
     | a1 :: q1, a2 :: q2 -> (a1 -. a2) ** 2. +. sumdiffsq q1 q2
   in sqrt (sumdiffsq p1 p2)
 
-let para_dist (a, c) (b, d) [x1; y1] [x2; y2] =
-  let det = (a *. d) -. (c *. b) in
-  let a', c', b', d' = d /. det, -.b /. det, -.c /. det, a /. det in
-  let x1', y1' = (a' *. x1) +. (b' *. y1), (c' *. x1) +. (d' *. y1) in
-  let x2', y2' = (a' *. x2) +. (b' *. y2), (c' *. x2) +. (d' *. y2) in
-  dist [x1' -. Float.floor x1'; y1' -. Float.floor y1'] [x2' -. Float.floor x2'; y2' -. Float.floor y2']
+let para_dist u v [x; y] p =
+  let [x'; y'] = get_representative u v [x; y] in
+  List.fold_left (fun a q -> min a (dist p q)) max_float (List.flatten (List.map (fun i -> (List.map (fun j -> [x' +. i; y' +. j]) [-1.; 0.; 1.])) [-1.; 0.; 1.]))
 
 (* takes a point and offsets it by xoffset, yoffset *)
 let rec offset o mult p =
@@ -173,20 +177,19 @@ let fill_rect left right top bottom threshold start_p =
   loop ()
 
 let fill_para u v threshold start_p =
-  let i = ref 1 in
   let g = Empty in
   let stack = S.create () in
   S.push start_p stack;
-  let rec loop grid =
+  let rec loop grid i =
     if S.is_empty stack then
       grid
     else
       let p = S.pop stack in
-      let (newgrid, added) = add_to_grid_para u v grid threshold p !i in
+      let (newgrid, added) = add_to_grid_para u v grid threshold p i in
       if added then
         let offsets = List.map (fun o -> offset o (threshold *. 2.0) p) offset_list in
         List.iter (fun q -> S.push q stack) offsets (* pushes 6 new points on stack *)
       else ();
-      loop newgrid
+      loop newgrid (i + 1)
   in
-  loop g
+  loop g 0
