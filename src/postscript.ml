@@ -73,7 +73,7 @@ let plot_grid fp stgs grid_list =
         let g = g1 +. (g2 -. g1) *. t in
         let b = b1 +. (b2 -. b1) *. t in
         set_colour (r, g, b);
-        output_string fp (sprintf "newpath %f %f dot\n" (x *. stgs.scale) (y *. stgs.scale));
+        output_string fp (sprintf "%f %f dot\n" (x *. stgs.scale) (y *. stgs.scale));
         if stgs.draw_circle <> 0.0 then (
           let f a = a *. stgs.scale in
           output_string fp (sprintf "%f %f %f circle\n" (f x) (f y) (f stgs.draw_circle))
