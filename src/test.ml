@@ -49,13 +49,8 @@ let run_para_test () =
     Printf.printf "%d points plotted.\n" (K.grid_size grid);
     (K.grid_size grid, fill_time)
   in
-  let thresholds = [1.21; 1.2; 1.19; 1.18; 1.17; 1.16; 1.15] in
-  let naive_points = List.mapi plot_one_threshold_naive thresholds in
-  let graph_settings = { settings with scale = 1.0 } in
-  let graph_file = P.create_ps_file (sprintf "test/timegraph") in
-  let f (x, y) = output_string graph_file (sprintf "%f %f dot\n" x y) in
-  P.close_ps_file graph_file
-
-
+  let thresholds = [1.21; 1.2; 1.19; 1.18; 1.17; 1.16; 1.15; 5.0] in
+  List.mapi plot_one_threshold_kd thresholds;
+  List.mapi plot_one_threshold_naive thresholds
 
 

@@ -94,10 +94,15 @@ let fill_para u v threshold start_p =
       g  (* return the grid *)
     else
       let p = S.pop stack in
+      (* Printf.printf "%f, %f " (fst p) (snd p); *)
       let offsets = List.map (fun o -> offset o (threshold *. 2.0) p) offset_list in
-      if add_to_grid u v g threshold p then
+      if add_to_grid u v g threshold p then begin
+        (* Printf.printf "added\n"; *)
         List.iter (fun q -> S.push q stack) offsets (* pushes 6 new points on stack *)
+        end
       ;
+      (* else *)
+        (* Printf.printf "not added\n"; *)
       loop ()
   in
   loop ()
