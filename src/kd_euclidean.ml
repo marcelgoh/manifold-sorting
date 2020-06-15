@@ -39,9 +39,9 @@ let to_list g =
     | Empty -> l
     | Node (info, left, right) -> (info.p', info.n) :: tolist_l left (tolist_l right l)
   in
-  let compare (_, m) (_, n) = m - n in
+  let cpare (_, m) (_, n) = m - n in
   let pair_list = tolist_l g [] in
-  let sorted = List.sort compare pair_list in
+  let sorted = List.stable_sort cpare pair_list in
   List.map fst sorted
 
 let dist p1 p2 =
@@ -121,8 +121,8 @@ let insert g p n p' =
     | Node (info, left, right) ->
        let next = (info.axis + 1) mod d in
        if List.nth p info.axis < info.pos
-       then Node (info, insertaxis left p next d info.n p', right)
-       else Node (info, left, insertaxis right p next d info.n p') in
+       then Node (info, insertaxis left p next d n p', right)
+       else Node (info, left, insertaxis right p next d n p') in
   let newaxis =
     match g with
      | Empty -> 0
@@ -142,10 +142,10 @@ let para_to_euclidean (a, c) (b, d) [x; y] =
   let x', y' = (a' *. x) +. (b' *. y), (c' *. x) +. (d' *. y) in
   [cos (2. *. pi *. x'); cos (2. *. pi *. y')]
 
-let add_to_grid_para u v g threshold p n =
+let add_to_grid_para u v g threshold allowance p n =
   let rep_p = get_representative u v p in
   let p' = para_to_euclidean u v rep_p in
-  let rect = (List.map (fun x -> (x -. threshold, x +. threshold)) p') in
+  let rect = (List.map (fun x -> (x -. threshold /. allowance, x +. threshold /. allowance)) p') in
   let dists = List.map (fun [qx; qy] -> let [px; py] = rep_p in N.quotient_dist u v (px, py) (qx, qy)) (find_in_range g rect) in
   match List.find_opt (fun d -> d < threshold) dists with
   | None -> (insert g p' n rep_p, true)
@@ -180,7 +180,7 @@ let fill_rect left right top bottom threshold start_p =
   in
   loop ()
 
-let fill_para u v threshold start_p =
+let fill_para u v threshold allowance start_p =
   let g = Empty in
   let stack = S.create () in
   S.push start_p stack;
@@ -190,7 +190,7 @@ let fill_para u v threshold start_p =
     else
       let p = S.pop stack in
       (* Printf.printf "%f, %f " (List.nth p 0) (List.nth p 1); *)
-      let (newgrid, added) = add_to_grid_para u v grid threshold p i in
+      let (newgrid, added) = add_to_grid_para u v grid threshold allowance p i in
       (* Printf.printf "%sadded\n" (if added then "" else "not "); *)
       if added then
         let offsets = List.map (fun o -> offset o (threshold *. 2.0) p) offset_list in

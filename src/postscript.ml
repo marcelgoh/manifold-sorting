@@ -56,6 +56,8 @@ let close_ps_file fp =
   output_string fp "showpage\n";
   close_out fp
 
+let set_colour fp (r, g, b) = output_string fp (sprintf "%f %f %f setrgbcolor\n" r g b)
+
 let plot_grid fp stgs grid_list =
   let (r1, g1, b1) = stgs.colour1 in
   let (r2, g2, b2) = stgs.colour2 in
@@ -64,7 +66,6 @@ let plot_grid fp stgs grid_list =
   output_string fp (sprintf "%d %d translate\n0.5 setlinewidth\n" xo yo);
   output_string fp (sprintf "newpath 0 -%d moveto 0 %d lineto stroke\n" yo (yo + 792));
   output_string fp (sprintf "newpath -%d 0 moveto %d 0 lineto stroke\n" xo (xo + 612));
-  let set_colour (r, g, b) = output_string fp (sprintf "%f %f %f setrgbcolor\n" r g b) in
   let print_point idx p =
     match p with
     | x :: y :: p' ->
@@ -72,7 +73,7 @@ let plot_grid fp stgs grid_list =
         let r = r1 +. (r2 -. r1) *. t in
         let g = g1 +. (g2 -. g1) *. t in
         let b = b1 +. (b2 -. b1) *. t in
-        set_colour (r, g, b);
+        set_colour fp (r, g, b);
         output_string fp (sprintf "%f %f dot\n" (x *. stgs.scale) (y *. stgs.scale));
         if stgs.draw_circle <> 0.0 then (
           let f a = a *. stgs.scale in
@@ -81,4 +82,4 @@ let plot_grid fp stgs grid_list =
     | _ -> raise Postscript_error
   in
   List.iteri print_point grid_list;  (* print every point in the grid *)
-  set_colour black
+  set_colour fp black

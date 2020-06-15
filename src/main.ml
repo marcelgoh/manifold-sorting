@@ -37,4 +37,6 @@ let kd_main () =
   Printf.printf "%d points plotted.\n" (K.grid_size grid)
 
 let _ =
-  T.run_para_test ()
+  T.run_para_test 1.0 "timegraph1-0" true;
+  T.run_para_test 3.0 "timegraph3-0" true;
+  T.run_para_test 5.0 "timegraph5-0" true
