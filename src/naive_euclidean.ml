@@ -25,7 +25,8 @@ let quotient_dist u v p1 p2 =
   let nv = scale_point (-1.0) v in
   let candidates = [  (* the candidates in all neighbouring domains *)
     p1; add_points p1 u; add_points p1 v; add_points (add_points p1 v) u;
-    add_points p1 nu; add_points p1 nv; add_points (add_points p1 nv) nu
+    add_points p1 nu; add_points p1 nv; add_points (add_points p1 nv) nu;
+    add_points (add_points p1 nv) u; add_points (add_points p1 v) nu
   ] in
   let dists = List.map (fun c -> dist c p2) candidates in  (* nine distances *)
   let min a b = if a < b then a else b in
