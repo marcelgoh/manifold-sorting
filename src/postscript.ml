@@ -73,7 +73,7 @@ let plot_grid fp stgs grid_list =
         let r = r1 +. (r2 -. r1) *. t in
         let g = g1 +. (g2 -. g1) *. t in
         let b = b1 +. (b2 -. b1) *. t in
-        set_colour fp (r, g, b);
+        if idx == ((List.length grid_list) - 1) then set_colour fp green else set_colour fp (r, g, b);
         output_string fp (sprintf "%f %f dot\n" (x *. stgs.scale) (y *. stgs.scale));
         if stgs.draw_circle <> 0.0 then (
           let f a = a *. stgs.scale in
