@@ -18,6 +18,8 @@ type tree =
   | Empty
   | Node of node_info * tree * tree
 
+exception Dimension_mismatch of int * int
+
 let pi = (acos (-.1.))
 
 let rec grid_size g =
@@ -25,8 +27,11 @@ let rec grid_size g =
   | Empty -> 0
   | Node (_, left, right)  -> 1 + grid_size left + grid_size right
 
-let get_representative (a, c) (b, d) [x; y] =
-  let (x', y') = N.get_representative (a, c) (b, d) (x, y) in [x'; y']
+let get_representative (a, c) (b, d) p =
+  match p with
+  | [x; y] ->
+     let (x', y') = N.get_representative (a, c) (b, d) (x, y) in [x'; y']
+  | _ -> raise (Dimension_mismatch (1, List.length p))
   (* let det = (a *. d) -. (c *. b) in
    * let a', c', b', d' = d /. det, -.b /. det, -.c /. det, a /. det in
    * let x', y' = (a' *. x) +. (b' *. y), (c' *. x) +. (d' *. y) in
@@ -49,18 +54,15 @@ let dist p1 p2 =
     match x1, x2 with
     | [], [] -> 0.
     | a1 :: q1, a2 :: q2 -> (a1 -. a2) ** 2. +. sumdiffsq q1 q2
+    | _ -> raise (Dimension_mismatch (List.length x1, List.length x2))
   in sqrt (sumdiffsq p1 p2)
-
-let para_dist (u1, u2) (v1, v2) [x; y] p =
-  let p' = get_representative (u1, u2) (v1, v2) p in
-  let [x'; y'] = get_representative (u1, u2) (v1, v2) [x; y] in
-  List.fold_left (fun a q -> min a (dist p' q)) max_float (List.flatten (List.map (fun (i1, i2) -> (List.map (fun (j1, j2) -> [x' +. i1 +. j1; y' +. i2 +. j2]) [(-.u1, -.u2); (0., 0.); (u1, u2)])) [(-.v1, -.v2); (0., 0.); (v1, v2)]))
 
 (* takes a point and offsets it by xoffset, yoffset *)
 let rec offset o mult p =
   match o, p with
   | [], [] -> []
   | a :: otail, b :: ptail -> b +. (mult *. a) :: offset otail mult ptail
+  | _ -> raise (Dimension_mismatch (List.length o, List.length p))
 
 (* six offset functions: along with centre point, this covers a ball of radius 1
  * with balls of radius 1/2 *)
@@ -136,18 +138,24 @@ let add_to_grid g threshold p n =
   let min_dist = List.fold_left min max_float dists in
   if min_dist > threshold then (insert g p n p, true) else (g, false)
 
-let para_to_euclidean (a, c) (b, d) [x; y] =
-  let det = (a *. d) -. (c *. b) in
-  let a', c', b', d' = d /. det, -.c /. det, -.b /. det, a /. det in
-  let x', y' = (a' *. x) +. (b' *. y), (c' *. x) +. (d' *. y) in
-  let l = (sqrt ((a ** 2.) +. (b ** 2.))) /. (2. *. pi) in
-  [cos (2. *. pi *. x') *. l; cos (2. *. pi *. y') *. l]
+let para_to_euclidean (a, c) (b, d) p =
+  match p with
+  | [x; y] ->
+     let det = (a *. d) -. (c *. b) in
+     let a', c', b', d' = d /. det, -.c /. det, -.b /. det, a /. det in
+     let x', y' = (a' *. x) +. (b' *. y), (c' *. x) +. (d' *. y) in
+     let l = (sqrt ((a ** 2.) +. (b ** 2.))) /. (2. *. pi) in
+     [cos (2. *. pi *. x') *. l; cos (2. *. pi *. y') *. l]
+  | _ -> raise (Dimension_mismatch (2, List.length p))
 
 let add_to_grid_para u v g threshold p n =
   let rep_p = get_representative u v p in
   let p' = para_to_euclidean u v rep_p in
   let rect = (List.map (fun x -> (x -. threshold, x +. threshold)) p') in
-  let dists = List.map (fun [qx; qy] -> let [px; py] = rep_p in N.quotient_dist u v (px, py) (qx, qy)) (find_in_range g rect) in
+  let dists = List.map (fun q ->
+                  match q, rep_p with
+                  | [qx; qy], [px; py] -> N.quotient_dist u v (px, py) (qx, qy)
+                  | _ -> raise (Dimension_mismatch (2, if List.length p == 2 then List.length q else List.length p))) (find_in_range g rect) in
   match List.find_opt (fun d -> d < threshold) dists with
   | None -> (insert g p' n rep_p, true)
   | Some x -> (g, false)
