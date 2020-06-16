@@ -138,7 +138,7 @@ let add_to_grid g threshold p n =
 
 let para_to_euclidean (a, c) (b, d) [x; y] =
   let det = (a *. d) -. (c *. b) in
-  let a', c', b', d' = d /. det, -.b /. det, -.c /. det, a /. det in
+  let a', b', c', d' = d /. det, -.b /. det, -.c /. det, a /. det in
   let x', y' = (a' *. x) +. (b' *. y), (c' *. x) +. (d' *. y) in
   [cos (2. *. pi *. x'); cos (2. *. pi *. y')]
 
