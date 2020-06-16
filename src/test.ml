@@ -6,7 +6,7 @@ module N = Naive_euclidean
 module K = Kd_euclidean
 module P = Postscript
 
-let run_para_test allowance filename print_output =
+let run_para_test filename print_output =
   let settings = {
     P.scale = 10.0;
     P.colour1 = P.red;
@@ -31,7 +31,7 @@ let run_para_test allowance filename print_output =
   in
   let plot_one_threshold_kd idx threshold =
     let start_time = Sys.time () in
-    let grid = K.fill_para (50.0, -1.0) (5.0, 60.0) threshold allowance [26.5; 24.5] in
+    let grid = K.fill_para (50.0, -1.0) (5.0, 60.0) threshold [26.5; 24.5] in
     let fill_time = Sys.time () -. start_time in
     if print_output then plot (filename ^ "kd") threshold K.to_list K.grid_size idx grid;
     (threshold, K.grid_size grid, fill_time)

@@ -21,4 +21,4 @@ val to_list : tree -> float list list
 (* the start point is assumed to be in the bounds *)
 val fill_rect : float -> float -> float -> float -> float -> float list -> tree
 
-val fill_para : float * float -> float * float -> float -> float -> float list -> tree
+val fill_para : float * float -> float * float -> float -> float list -> tree
