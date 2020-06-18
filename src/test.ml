@@ -7,10 +7,8 @@ module K = Kd_euclidean
 module P = Postscript
 
 let run_para_test filename print_output =
-  let settings = {
+  let settings = { P.default with
     P.scale = 10.0;
-    P.colour1 = P.red;
-    P.colour2 = P.blue;
     P.xorigin = 20;
     P.yorigin = 20;
     P.draw_circle = 0.0;
@@ -36,12 +34,17 @@ let run_para_test filename print_output =
     if print_output then plot (filename ^ "kd") threshold K.to_list K.grid_size idx grid;
     (threshold, K.grid_size grid, fill_time)
   in
-  let thresholds = [1.1; 1.12; 1.15; 1.2; 1.25; 1.3; 1.4; 1.5; 1.6; 1.7; 2.0; 3.0; 4.0; 5.0] in
-  let kd_pts = List.mapi plot_one_threshold_kd thresholds in
-  let naive_pts = List.mapi plot_one_threshold_naive thresholds in
+  let rec range a b inc =
+    if a > b then [] else a :: range (a +. inc) b inc in
+  (* let thresholds = range 0.25 5. 0.25 in *)
+  let thresholds = [0.5; 0.505; 0.51; 0.515; 0.52; 0.53; 0.54; 0.55; 0.6; 0.7; 0.8; 1.; 2.; 5.] in
+  Printf.printf "kd\n";
+  let kd_pts = List.mapi (fun i t -> Printf.printf "%f\n" t; flush stdout; plot_one_threshold_kd i t) thresholds in
+  Printf.printf "naive\n";
+  let naive_pts = List.mapi (fun i t -> Printf.printf "%f\n" t; flush stdout; plot_one_threshold_naive i t) thresholds in
   let fp = P.create_ps_file ("test/" ^ filename) in
-  let xf = 0.3 in  (* scale factor *)
-  let yf = 70.0 in
+  let xf = 550. /. (List.fold_left max min_float (List.map (fun (_,a,_) -> float_of_int a) kd_pts)) in  (* scale factor *)
+  let yf = 700. /. (List.fold_left max min_float (List.map (fun (_,_,a) -> a) kd_pts)) in
   let plot (_, x',y) =
     let x = float_of_int x' in
     output_string fp (sprintf "%f %f dot\n" (x *. xf) (y *. yf)) in

@@ -8,15 +8,20 @@ module K = Kd_euclidean
 exception Postscript_error
 
 let red = (1.0, 0.0, 0.0)
+let orange = (1.0, 0.3, 0.0)
 let green = (0.101, 0.501, 0.0)
 let blue = (0.0, 0.0, 1.0)
 let black = (0.0, 0.0, 0.0)
 let purple = (0.5, 0.0, 1.0)
 
+type colour = float * float * float
+
 type settings = {
   scale : float;
-  colour1 : float * float * float;
-  colour2 : float * float * float;
+  colour1 : colour;
+  colour2 : colour;
+  startcolour : colour;
+  endcolour : colour;
   xorigin : int;
   yorigin : int;
   draw_circle : float;  (* radius of circle to draw *)
@@ -26,6 +31,8 @@ let default = {
   scale = 5.0;
   colour1 = red;
   colour2 = blue;
+  startcolour = green;
+  endcolour = red;
   xorigin = 306;
   yorigin = 396;
   draw_circle = 0.0;
@@ -73,7 +80,7 @@ let plot_grid fp stgs grid_list =
         let r = r1 +. (r2 -. r1) *. t in
         let g = g1 +. (g2 -. g1) *. t in
         let b = b1 +. (b2 -. b1) *. t in
-        if idx == ((List.length grid_list) - 1) then set_colour fp green else set_colour fp (r, g, b);
+        if idx == 0 then set_colour fp stgs.startcolour else if idx == ((List.length grid_list) - 1) then set_colour fp stgs.endcolour else set_colour fp (r, g, b);
         output_string fp (sprintf "%f %f dot\n" (x *. stgs.scale) (y *. stgs.scale));
         if stgs.draw_circle <> 0.0 then (
           let f a = a *. stgs.scale in
