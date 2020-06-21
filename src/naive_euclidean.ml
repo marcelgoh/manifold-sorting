@@ -1,7 +1,7 @@
 (* Naive implementation of Euclidean space *)
 
 module D = DynArray
-module S = Stack
+module S = Queue
 
 exception Zero_determinant
 

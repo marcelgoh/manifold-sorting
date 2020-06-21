@@ -1,7 +1,7 @@
 (* Kd implementation of Euclidean space *)
 
 module D = DynArray
-module S = Stack
+module S = Queue
 module N = Naive_euclidean
 
 type point = float list

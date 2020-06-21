@@ -1,7 +1,6 @@
 (* Naive implementation of Euclidean space *)
 
 module D = DynArray
-module S = Stack
 
 exception Zero_determinant
 
