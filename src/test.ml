@@ -28,7 +28,8 @@ let run_para_test filename print_output =
     P.draw_circle = 0.0;
   } in
   let plot_one_grid newfilename threshold to_list grid_size idx grid =
-    let fp = P.create_ps_file (sprintf "out/%s--%d" newfilename idx) in
+    let thresh_str = Str.global_replace (Str.regexp_string ".") "-" (sprintf "%g" threshold) in
+    let fp = P.create_ps_file (sprintf "out/%s--%s" newfilename thresh_str) in
     P.plot_grid fp { settings with P.draw_circle = threshold } (to_list grid);
     output_string fp (sprintf "30 750 moveto (THRESHOLD: %f) show\n" threshold);
     output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (grid_size grid));
@@ -50,7 +51,8 @@ let run_para_test filename print_output =
   in
   let max_in_list_float = List.fold_left max min_float in
   let max_in_list_int = List.fold_left max min_int in
-  let thresholds = [0.5; 0.505; 0.51; 0.515; 0.52; 0.53; 0.54; 0.55; 0.6; 0.7; 0.8; 1.; 2.; 5.] in
+  let thresholds = [0.27; 0.28; 0.29; 0.30; 0.31; 0.315; 0.32; 0.325; 0.33; 0.34; 0.36; 0.38; 0.40; 0.42; 0.44; 0.46; 0.48; 0.5; 0.52; 0.54; 0.55; 0.57; 0.6; 0.7; 0.8; 1.; 2.; 3.; 4.; 5.] in
+(* let thresholds = [0.5; 0.515; 0.52; 0.53; 0.54; 0.55; 0.6; 0.62; 0.65; 0.7; 0.75; 0.8; 0.9; 1.; 1.1; 1.2; 1.3; 1.4; 1.5; 2.; 3.; 4.; 5.] in *)
   let fp = P.create_ps_file ("test/" ^ filename) in
   Printf.printf "kd\n";
   let kd_pts = List.mapi (fun i t -> Printf.printf "%f\n" t; flush stdout; build_kd_pts i t) thresholds in
@@ -62,8 +64,14 @@ let run_para_test filename print_output =
   let second_triple (_, b, _) = b in
   let third_triple (_, _, c) = c in
   let graph_settings = { P.default_graph with
+(*
+    P.xmax = max_in_list_int (List.map second_triple naive_pts);
+    P.ymax = max_in_list_float (List.map third_triple naive_pts);
+*)
     P.xmax = max_in_list_int (List.map second_triple kd_pts);
     P.ymax = max_in_list_float (List.map third_triple kd_pts);
+    P.ylabeloffsets = 22;
+    P.write_thresholds = true;
   } in
   let print_info () kd_pts naive_pts =
     P.moveto fp 30 750;
@@ -82,6 +90,7 @@ let run_para_test filename print_output =
     P.show_str fp "NAIVE_TIME:";
     List.iter (P.show_float fp) (List.map third_triple naive_pts);
   in
-  P. draw_graph fp graph_settings [(P.green, kd_pts)];
+(*   P.draw_graph fp graph_settings [(P.green, kd_pts); (P.red, naive_pts)]; *)
+  P.draw_graph fp graph_settings [(P.green, kd_pts)];
   P.close_ps_file fp
 

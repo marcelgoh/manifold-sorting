@@ -7,4 +7,4 @@ module P = Postscript
 module T = Test
 
 let _ =
-  T.run_para_test "timegraph10-0" true;
+  T.run_para_test "kdonly1" true;

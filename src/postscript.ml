@@ -33,6 +33,11 @@ type graph_settings = {
   ynumticks : int;
   xmargin : int;  (* (xmargin, ymargin) is the origin; an equal amount of space is ... *)
   ymargin : int;  (* left at the top and right side of the graph as well *)
+  xaxislabeloffset : int;
+  yaxislabeloffset : int;
+  xlabeloffsets : int;
+  ylabeloffsets : int;
+  write_thresholds : bool;
 }
 
 let default = {
@@ -53,6 +58,11 @@ let default_graph = {
   ynumticks = 5;
   xmargin = 30;
   ymargin = 30;
+  xaxislabeloffset = 20;  (* text that labels the axis *)
+  yaxislabeloffset = 15;
+  xlabeloffsets = 8;  (* text beside a tickmark *)
+  ylabeloffsets = 18;
+  write_thresholds = false;
 }
 
 let file = "/out/plot"
@@ -61,15 +71,12 @@ let preamble ="
 /dot { 1.5 0 360 arc closepath fill } def
 /circle { 0 360 arc closepath stroke } def
 /Courier findfont 9 scalefont setfont
-/ytick { newpath 0 exch moveto -5 0 rmoveto 10 0 rlineto stroke} def
-/xtick { newpath 0 moveto 0 -5 rmoveto 0 10 rlineto stroke} def
+/ytick { newpath moveto -5 0 rmoveto 10 0 rlineto stroke} def
+/xtick { newpath moveto 0 -5 rmoveto 0 10 rlineto stroke} def
 0.5 setlinewidth
 "
 
-let xtick fp stgs (tick : int) =
-  let x = float_of_int tick *. stgs.scale in
-  output_string fp (sprintf "%f xtick\n" x);
-  output_string fp (sprintf "%f -7 moveto (%d) show\n" x tick)
+let set_fontsize fp size = output_string fp (sprintf "/Courier findfont %d scalefont setfont\n" size)
 
 (* create_ps_file filename creates (overwrites) <filename>.ps *)
 let create_ps_file filename =
@@ -91,37 +98,66 @@ let set_colour fp (r, g, b) = output_string fp (sprintf "%f %f %f setrgbcolor\n"
 
 let draw_axes fp gstgs =
   output_string fp (sprintf "newpath %d %d moveto 0 %d rlineto stroke\n"
-                      gstgs.xmargin gstgs.ymargin (792 - (2 * gstgs.ymargin)));
+                      gstgs.xmargin gstgs.ymargin (792 - gstgs.ymargin));
   output_string fp (sprintf "newpath %d %d moveto %d 0 rlineto stroke\n"
-                      gstgs.xmargin gstgs.ymargin (612 - (2 * gstgs.xmargin)))
+                      gstgs.xmargin gstgs.ymargin (612 - gstgs.xmargin))
 
-let xlabel fp gstgs offset str =
-  moveto fp gstgs.xmargin (gstgs.ymargin - offset);
+let xlabel fp gstgs str =
+  moveto fp gstgs.xmargin (gstgs.ymargin - gstgs.xaxislabeloffset);
   show_str fp str
 
-let ylabel fp gstgs offset str =
-  output_string fp (sprintf "gsave %d %d translate 90 rotate\n" (gstgs.xmargin - offset) gstgs.ymargin);
+let ylabel fp gstgs str =
+  output_string fp (sprintf "gsave %d %d translate 90 rotate\n"
+                            (gstgs.xmargin - gstgs.yaxislabeloffset) gstgs.ymargin);
   moveto fp 0 0;
   show_str fp str;
   output_string fp "grestore\n"
 
+(* print an integer value on the x-axis *)
+let xtick fp xf gstgs (n : int) =
+  let y' = gstgs.ymargin - gstgs.xlabeloffsets in  (* offset the label *)
+  let x = n * gstgs.xmax / gstgs.xnumticks in
+  let coord_x = int_of_float (float_of_int x *. xf) + gstgs.xmargin in
+  output_string fp (sprintf "%d %d xtick\n" coord_x gstgs.ymargin);
+  output_string fp (sprintf "%d %d moveto (%d) show\n" (coord_x + 2) y' x)
+
+(* print a float value on the x-axis *)
+let ytick fp yf gstgs (n : int) =
+  let x' = gstgs.xmargin - gstgs.ylabeloffsets in  (* offset the label *)
+  let y = float_of_int n *. gstgs.ymax /. float_of_int gstgs.ynumticks in
+  let coord_y = y *. yf +. float_of_int gstgs.ymargin in
+  output_string fp (sprintf "%d %f ytick\n" gstgs.xmargin coord_y);
+  output_string fp (sprintf "%d %f moveto (%.1f) show\n" x' (coord_y +. 3.0) y)
+
 let draw_graph fp gstgs point_list_list =
   let xmar = float_of_int gstgs.xmargin in
   let ymar = float_of_int gstgs.ymargin in
+  let rec range m n = if m = n then [m] else m :: range (m+1) n in
+  let xticks = range 0 gstgs.xnumticks in
+  let yticks = range 0 gstgs.ynumticks in
   draw_axes fp gstgs;
-  xlabel fp gstgs 20 "     NO. OF POINTS";
-  ylabel fp gstgs 15 "     TIME (s)";
+  xlabel fp gstgs "     NO. OF POINTS";
+  ylabel fp gstgs "     TIME (s)";
   (* scale factors *)
   let xf = (612.0 -. (2.0 *. xmar)) /. (float_of_int gstgs.xmax) in
   let yf = (792.0 -. (2.0 *. ymar)) /. gstgs.ymax in
-  let draw (_, x',y) =
-    let x = float_of_int x' in
-    dot fp (x *. xf +. xmar) (y *. yf +. ymar)
-  in
-  let draw_one_list (col, l) =
+  let draw col (threshold, x',y') =
+    let x = float_of_int x' *. xf +. xmar in
+    let y = y' *. yf +. ymar in
     set_colour fp col;
-    List.iter draw l
+    dot fp x y;
+    if gstgs.write_thresholds then (
+      moveto fp (int_of_float x + 2) (int_of_float y + 2);
+      set_fontsize fp 6;
+      set_colour fp black;
+      show_float fp threshold;
+    )
   in
+  let draw_one_list (col, l) = List.iter (draw col) l in
+  let draw_one_xtick = xtick fp xf gstgs in
+  let draw_one_ytick = ytick fp yf gstgs in
+  List.iter draw_one_xtick xticks;
+  List.iter draw_one_ytick yticks;
   List.iter draw_one_list point_list_list;
   set_colour fp black
 
