@@ -34,14 +34,6 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float list en
       let sorted = List.stable_sort cpare pair_list in
       List.map fst sorted
 
-    let e_dist p1 p2 =
-      let rec sumdiffsq x1 x2 =
-        match x1, x2 with
-        | [], [] -> 0.
-        | a1 :: q1, a2 :: q2 -> (a1 -. a2) ** 2. +. sumdiffsq q1 q2
-        | _ -> raise (Dimension_mismatch (List.length x1, List.length x2))
-      in sqrt (sumdiffsq p1 p2)
-
     let rec find_in_range g rect =
       let in_rect x rect =
         (List.find_opt (fun (x, (min, max)) -> min > x || x > max) (List.combine x rect)) == None
