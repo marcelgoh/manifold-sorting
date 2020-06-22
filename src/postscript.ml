@@ -3,7 +3,6 @@
 open Printf
 
 module D = DynArray
-module K = Kd_euclidean
 
 exception Postscript_error
 

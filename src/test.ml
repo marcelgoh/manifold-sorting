@@ -1,10 +1,24 @@
 (* Tests and plotting running times *)
 
 open Printf
-module D = DynArray
-module N = Naive_euclidean
-module K = Kd_euclidean
 module P = Postscript
+
+let u = (50.0, -1.0)
+let v = (5.0, 60.0)
+module T = (val Torus.torus u v : Space.Space with type point = float * float)
+
+let pi = (acos (-.1.))
+
+let para_to_euclidean (x, y) =
+  let (a, c), (b, d) = u, v in
+  let det = (a *. d) -. (c *. b) in
+  let a', c', b', d' = d /. det, -.c /. det, -.b /. det, a /. det in
+  let x', y' = (a' *. x) +. (b' *. y), (c' *. x) +. (d' *. y) in
+  let l = (sqrt ((a ** 2.) +. (b ** 2.))) /. (2. *. pi) in
+  [cos (2. *. pi *. x') *. l; cos (2. *. pi *. y') *. l]
+
+module N = Naive.Naive(T)
+module K = Kd.Kd(T)(struct let to_e = para_to_euclidean end)
 
 let run_para_test filename print_output =
   let settings = { P.default with
@@ -22,16 +36,16 @@ let run_para_test filename print_output =
   in
   let build_naive_pts idx threshold =
     let start_time = Sys.time () in
-    let grid = N.fill_para (50.0, -1.0) (5.0, 60.0) threshold (26.5, 24.5) in
+    let grid = N.build threshold (26.5, 24.5) in
     let fill_time = Sys.time () -. start_time in
-    if print_output then plot_one_grid (filename ^ "naive") threshold N.to_list N.grid_size idx grid;
+    if print_output then plot_one_grid (filename ^ "naive") threshold (fun g -> List.map T.to_screen (N.to_list g)) N.grid_size idx grid;
     (threshold, N.grid_size grid, fill_time)
   in
   let build_kd_pts idx threshold =
     let start_time = Sys.time () in
-    let grid = K.fill_para (50.0, -1.0) (5.0, 60.0) threshold [26.5; 24.5] in
+    let grid = K.build threshold (26.5, 24.5) in
     let fill_time = Sys.time () -. start_time in
-    if print_output then plot_one_grid (filename ^ "kd") threshold K.to_list K.grid_size idx grid;
+    if print_output then plot_one_grid (filename ^ "kd") threshold (fun g -> List.map T.to_screen (K.to_list g)) K.grid_size idx grid;
     (threshold, K.grid_size grid, fill_time)
   in
   let max_in_list_float = List.fold_left max min_float in
