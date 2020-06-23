@@ -25,12 +25,11 @@ let run_para_test filename print_output =
     P.scale = 10.0;
     P.xorigin = 20;
     P.yorigin = 20;
-    P.draw_circle = 0.0;
   } in
   let plot_one_grid newfilename threshold to_list grid_size idx grid =
     let thresh_str = Str.global_replace (Str.regexp_string ".") "-" (sprintf "%g" threshold) in
     let fp = P.create_ps_file (sprintf "out/%s--%s" newfilename thresh_str) in
-    P.plot_grid fp { settings with P.draw_circle = threshold } (to_list grid);
+    P.plot_grid fp settings (to_list grid);
     output_string fp (sprintf "30 750 moveto (THRESHOLD: %f) show\n" threshold);
     output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (grid_size grid));
     P.close_ps_file fp
@@ -39,20 +38,21 @@ let run_para_test filename print_output =
     let start_time = Sys.time () in
     let grid = N.build threshold (26.5, 24.5) in
     let fill_time = Sys.time () -. start_time in
-    if print_output then plot_one_grid (filename ^ "naive") threshold (fun g -> List.map T.to_screen (N.to_list g)) N.grid_size idx grid;
+    if print_output then plot_one_grid (filename ^ "naive") threshold (fun g -> List.map (fun p -> T.to_screen p threshold) (N.to_list g)) N.grid_size idx grid;
     (threshold, N.grid_size grid, fill_time)
   in
   let build_kd_pts idx threshold =
     let start_time = Sys.time () in
     let grid = K.build threshold (26.5, 24.5) in
     let fill_time = Sys.time () -. start_time in
-    if print_output then plot_one_grid (filename ^ "kd") threshold (fun g -> List.map T.to_screen (K.to_list g)) K.grid_size idx grid;
+    if print_output then plot_one_grid (filename ^ "kd") threshold (fun g -> List.map (fun p -> T.to_screen p threshold) (K.to_list g)) K.grid_size idx grid;
     (threshold, K.grid_size grid, fill_time)
   in
   let max_in_list_float = List.fold_left max min_float in
   let max_in_list_int = List.fold_left max min_int in
   let thresholds = [0.27; 0.28; 0.29; 0.30; 0.31; 0.315; 0.32; 0.325; 0.33; 0.34; 0.36; 0.38; 0.40; 0.42; 0.44; 0.46; 0.48; 0.5; 0.52; 0.54; 0.55; 0.57; 0.6; 0.7; 0.8; 1.; 2.; 3.; 4.; 5.] in
 (* let thresholds = [0.5; 0.515; 0.52; 0.53; 0.54; 0.55; 0.6; 0.62; 0.65; 0.7; 0.75; 0.8; 0.9; 1.; 1.1; 1.2; 1.3; 1.4; 1.5; 2.; 3.; 4.; 5.] in *)
+  (* let thresholds = [0.49; 0.5; 0.505; 0.51; 0.515; 0.52; 0.53; 0.54; 0.55; 0.6; 0.62; 0.65; 0.7; 0.75; 0.8; 0.9; 1.; 1.1; 1.2; 1.3; 1.4; 1.5; 2.; 3.; 4.; 5.] in *)
   let fp = P.create_ps_file ("test/" ^ filename) in
   Printf.printf "kd\n";
   let kd_pts = List.mapi (fun i t -> Printf.printf "%f\n" t; flush stdout; build_kd_pts i t) thresholds in

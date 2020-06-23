@@ -23,7 +23,6 @@ type settings = {
   endcolour : colour;
   xorigin : int;
   yorigin : int;
-  draw_circle : float;  (* radius of circle to draw *)
 }
 
 type graph_settings = {
@@ -48,7 +47,6 @@ let default = {
   endcolour = red;
   xorigin = 306;
   yorigin = 396;
-  draw_circle = 0.0;
 }
 
 let default_graph = {
@@ -170,24 +168,22 @@ let plot_grid fp stgs grid_list =
   output_string fp (sprintf "newpath 0 -%d moveto 0 %d lineto stroke\n" yo (yo + 792));
   output_string fp (sprintf "newpath -%d 0 moveto %d 0 lineto stroke\n" xo (xo + 612));
   let print_point idx p =
-    match p with
-    | x :: y :: _ ->
-        let t = (float_of_int idx) /. num_pts in
-        let r = r1 +. (r2 -. r1) *. t in
-        let g = g1 +. (g2 -. g1) *. t in
-        let b = b1 +. (b2 -. b1) *. t in
-        if idx == 0 then
-          set_colour fp stgs.startcolour
-        else if idx == ((List.length grid_list) - 1) then
-          set_colour fp stgs.endcolour
-        else
-          set_colour fp (r, g, b);
-        output_string fp (sprintf "%f %f dot\n" (x *. stgs.scale) (y *. stgs.scale));
-        if stgs.draw_circle <> 0.0 then (
-          let f a = a *. stgs.scale in
-          output_string fp (sprintf "%f %f %f circle\n" (f x) (f y) (f stgs.draw_circle))
-        )
-    | _ -> raise Postscript_error
+    let (x, y), r = p in
+    let t = (float_of_int idx) /. num_pts in
+    let r = r1 +. (r2 -. r1) *. t in
+    let g = g1 +. (g2 -. g1) *. t in
+    let b = b1 +. (b2 -. b1) *. t in
+    if idx == 0 then
+      set_colour fp stgs.startcolour
+    else if idx == ((List.length grid_list) - 1) then
+      set_colour fp stgs.endcolour
+    else
+      set_colour fp (r, g, b);
+    output_string fp (sprintf "%f %f dot\n" (x *. stgs.scale) (y *. stgs.scale));
+    if r <> 0.0 then (
+      let f a = a *. stgs.scale in
+      output_string fp (sprintf "%f %f %f circle\n" (f x) (f y) (f r))
+    )
   in
   List.iteri print_point grid_list;  (* print every point in the grid *)
   set_colour fp black
