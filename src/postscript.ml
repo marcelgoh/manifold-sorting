@@ -168,7 +168,7 @@ let plot_grid fp stgs grid_list =
   output_string fp (sprintf "newpath 0 -%d moveto 0 %d lineto stroke\n" yo (yo + 792));
   output_string fp (sprintf "newpath -%d 0 moveto %d 0 lineto stroke\n" xo (xo + 612));
   let print_point idx p =
-    let (x, y), r = p in
+    let (x, y), r, (x', y') = p in
     let t = (float_of_int idx) /. num_pts in
     let r = r1 +. (r2 -. r1) *. t in
     let g = g1 +. (g2 -. g1) *. t in
@@ -179,7 +179,7 @@ let plot_grid fp stgs grid_list =
       set_colour fp stgs.endcolour
     else
       set_colour fp (r, g, b);
-    output_string fp (sprintf "%f %f dot\n" (x *. stgs.scale) (y *. stgs.scale));
+    output_string fp (sprintf "%f %f dot\n" (x' *. stgs.scale) (y' *. stgs.scale));
     if r <> 0.0 then (
       let f a = a *. stgs.scale in
       output_string fp (sprintf "%f %f %f circle\n" (f x) (f y) (f r))

@@ -52,5 +52,5 @@ let torus u v =
      let get_local_cover r p =
        List.map (fun o -> offset o (r *. 2.0) p) offset_list
 
-     let to_screen (x, y) r = (simpl (x, y), r)
+     let to_screen (x, y) r = (simpl (x, y), r, (x, y))
    end : Space.Space with type point = float * float)
