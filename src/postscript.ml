@@ -159,6 +159,13 @@ let draw_graph fp gstgs point_list_list =
   List.iter draw_one_list point_list_list;
   set_colour fp black
 
+let draw_point fp stgs ((x, y), r, (x', y')) =
+  output_string fp (sprintf "%f %f dot\n" (x' *. stgs.scale) (y' *. stgs.scale));
+  if r <> 0.0 then (
+    let f a = a *. stgs.scale in
+    output_string fp (sprintf "%f %f %f circle\n" (f x) (f y) (f r))
+  )
+
 let plot_grid fp stgs grid_list =
   let (r1, g1, b1) = stgs.colour1 in
   let (r2, g2, b2) = stgs.colour2 in
@@ -168,7 +175,7 @@ let plot_grid fp stgs grid_list =
   output_string fp (sprintf "newpath 0 -%d moveto 0 %d lineto stroke\n" yo (yo + 792));
   output_string fp (sprintf "newpath -%d 0 moveto %d 0 lineto stroke\n" xo (xo + 612));
   let print_point idx p =
-    let (x, y), r, (x', y') = p in
+    (* this takes a triple from to_screen *)
     let t = (float_of_int idx) /. num_pts in
     let r = r1 +. (r2 -. r1) *. t in
     let g = g1 +. (g2 -. g1) *. t in
@@ -179,11 +186,7 @@ let plot_grid fp stgs grid_list =
       set_colour fp stgs.endcolour
     else
       set_colour fp (r, g, b);
-    output_string fp (sprintf "%f %f dot\n" (x' *. stgs.scale) (y' *. stgs.scale));
-    if r <> 0.0 then (
-      let f a = a *. stgs.scale in
-      output_string fp (sprintf "%f %f %f circle\n" (f x) (f y) (f r))
-    )
+    draw_point fp stgs p
   in
   List.iteri print_point grid_list;  (* print every point in the grid *)
   set_colour fp black
