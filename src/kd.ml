@@ -72,7 +72,7 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float list en
       | None -> (insert g p' n simpl_p, true)
       | Some x -> (g, false)
 
-    let build threshold start_p =
+    let fill_space threshold start_p =
       let g = Empty in
       let stack = S.create () in
       S.push start_p stack;
@@ -84,6 +84,23 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float list en
           let (newgrid, added) = add_to_grid grid threshold p i in
           if added then (
             List.iter (fun q -> S.push q stack) (Space.get_local_cover threshold p); (* pushes 6 new points on stack *)
+            loop newgrid (i + 1)
+          ) else
+            loop newgrid i
+      in
+      loop g 0
+    let fill_ball center r threshold start_p =
+      let g = Empty in
+      let stack = S.create () in
+      S.push start_p stack;
+      let rec loop grid i =
+        if S.is_empty stack then
+          grid
+        else
+          let p = S.pop stack in
+          let (newgrid, added) = add_to_grid grid threshold p i in
+          if added then (
+            List.iter (fun q -> S.push q stack) (List.filter (fun x -> r >= Space.dist x p) (Space.get_local_cover threshold p)); (* pushes 6 new points on stack *)
             loop newgrid (i + 1)
           ) else
             loop newgrid i

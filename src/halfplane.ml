@@ -1,25 +1,32 @@
 module Halfplane : Space.Space with type point = float * float = struct
-  exception Zero_determinant
+  exception Hyperbolic_error
 
   type point = float * float
 
-  let dist p1 p2 = 1.
+  let dist (x1, y1) (x2, y2) =
+    let a = (x2 -. x1) ** 2. in
+    let b = (y2 -. y1) ** 2. in
+    let c = (y2 +. y1) ** 2. in
+    2. *. log ( ((sqrt (a +. b)) +. (sqrt (a +. c))) /. (2. *. sqrt (y1 *. y2)) )
 
   let simpl p = p
 
-  (* six offset functions: along with centre point, this covers a ball of radius 1
-   * with balls of radius 1/2 *)
-  let offset_list = [
-      (0.0, 0.866);
-      (0.75, 0.433);
-      (0.75, -0.433);
-      (0.0, -0.866);
-      (-0.75, -0.433);
-      (-0.75, 0.433);
+  let offset_list =
+    [
+      (0., 0.4);
+      (0., 2.5);
+      (0.35, 0.55);
+      (-0.35, 0.55);
+      (0.8, 0.8);
+      (-0.8, 0.8);
+      (0.8, 1.5);
+      (-0.8, 1.5);
     ]
 
-  let get_local_cover r p =
-    []
+  let get_local_cover r (x, y) =
+    if r = 0.5 then
+      List.map (fun (x', y') -> (x +. x', y *. y')) offset_list
+    else raise Hyperbolic_error
 
-  let to_screen (x, y) r = (x, y *. sinh r), (y *. cosh r), (x, y)
+  let to_screen (x, y) r = (x, y *. cosh r), (y *. sinh r), (x, y)
 end

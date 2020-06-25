@@ -5,5 +5,6 @@ module type Grid = sig
 
   val grid_size : grid -> int
   val to_list : grid -> point list
-  val build : float -> point -> grid
+  val fill_space : float -> point -> grid
+  val fill_ball : point -> float -> float -> point -> grid
 end

@@ -36,7 +36,7 @@ module Naive (Space : Space.Space) = (struct
        if min_dist > threshold then (D.add g rep; true) else false
 
   (* fills a parallelogram; the start point is assumed to be in the bounds *)
-  let build threshold start_p =
+  let fill_space threshold start_p =
     let g = create_grid () in
     let stack = S.create () in
     S.push start_p stack;
@@ -47,6 +47,28 @@ module Naive (Space : Space.Space) = (struct
         let p = S.pop stack in
         (* Printf.printf "%f, %f " (fst p) (snd p); *)
         let offsets = Space.get_local_cover threshold p in
+        if add_to_grid g threshold p then begin
+            (* Printf.printf "added\n"; *)
+            List.iter (fun q -> S.push q stack) offsets (* pushes 6 new points on stack *)
+          end
+        ;
+          (* else *)
+          (* Printf.printf "not added\n"; *)
+          loop ()
+    in
+    loop ()
+
+  let fill_ball center r threshold start_p =
+    let g = create_grid () in
+    let stack = S.create () in
+    S.push start_p stack;
+    let rec loop () =
+      if S.is_empty stack then
+        g  (* return the grid *)
+      else
+        let p = S.pop stack in
+        (* Printf.printf "%f, %f " (fst p) (snd p); *)
+        let offsets = List.filter (fun x -> r >= Space.dist x center) (Space.get_local_cover threshold p) in
         if add_to_grid g threshold p then begin
             (* Printf.printf "added\n"; *)
             List.iter (fun q -> S.push q stack) offsets (* pushes 6 new points on stack *)

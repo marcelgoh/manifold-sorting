@@ -36,14 +36,14 @@ let run_para_test filename print_output =
   in
   let build_naive_pts idx threshold =
     let start_time = Sys.time () in
-    let grid = N.build threshold (26.5, 24.5) in
+    let grid = N.fill_space threshold (26.5, 24.5) in
     let fill_time = Sys.time () -. start_time in
     if print_output then plot_one_grid (filename ^ "naive") threshold (fun g -> List.map (fun p -> T.to_screen p threshold) (N.to_list g)) N.grid_size idx grid;
     (threshold, N.grid_size grid, fill_time)
   in
   let build_kd_pts idx threshold =
     let start_time = Sys.time () in
-    let grid = K.build threshold (26.5, 24.5) in
+    let grid = K.fill_space threshold (26.5, 24.5) in
     let fill_time = Sys.time () -. start_time in
     if print_output then plot_one_grid (filename ^ "kd") threshold (fun g -> List.map (fun p -> T.to_screen p threshold) (K.to_list g)) K.grid_size idx grid;
     (threshold, K.grid_size grid, fill_time)
