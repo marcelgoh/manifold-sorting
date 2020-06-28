@@ -100,7 +100,7 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float list en
           let p = S.pop stack in
           let (newgrid, added) = add_to_grid grid threshold p i in
           if added then (
-            List.iter (fun q -> S.push q stack) (List.filter (fun x -> r >= Space.dist x p) (Space.get_local_cover threshold p)); (* pushes 6 new points on stack *)
+            List.iter (fun q -> S.push q stack) (List.filter (fun x -> r > Space.dist x center) (Space.get_local_cover threshold p)); (* pushes 6 new points on stack *)
             loop newgrid (i + 1)
           ) else
             loop newgrid i

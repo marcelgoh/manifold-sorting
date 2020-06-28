@@ -25,7 +25,7 @@ module Halfplane : Space.Space with type point = float * float = struct
 
   let get_local_cover r (x, y) =
     if r = 0.5 then
-      List.map (fun (x', y') -> (x +. x', y *. y')) offset_list
+      List.map (fun (x', y') -> (x +. (x' *. y), y *. y')) offset_list
     else raise Hyperbolic_error
 
   let to_screen (x, y) r = (x, y *. cosh r), (y *. sinh r), (x, y)
