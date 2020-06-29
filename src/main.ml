@@ -2,7 +2,7 @@
 
 open Printf
 
-module M =  Metric
+module M = Metric
 module P = Postscript
 module T = Test
 module H = Halfplane.Halfplane
@@ -12,6 +12,7 @@ module N = Naive.Naive(H)
 let _ =
   (* T.run_para_test "kdonly1" true; *)
   let fp = P.create_ps_file "halfplane" in
-  let grid = N.fill_ball (0., 1.) 2.0 0.5 (0., 1.) in
-  P.plot_grid fp { P.default with scale=30. } (List.map (fun p -> H.to_screen p 0.5) (N.to_list grid));
+  let grid = K.fill_ball (0., 1.) 4.0 0.5 (0., 1.) in
+  P.plot_grid fp { P.default with scale=30. } (List.map (fun p -> H.to_screen p 0.5) (K.to_list grid));
   P.close_ps_file fp
+(*   Test.run_halfplane_test "halfplane" true *)
