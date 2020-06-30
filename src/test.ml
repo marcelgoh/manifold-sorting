@@ -50,7 +50,10 @@ let run_halfplane_test filename print_output =
     (ball_radius, Nh.grid_size grid, fill_time)
   in
   let build_kd_pts idx ball_radius =
-    let module Kh = Kd.Kd(H)(struct let to_e p = [H.dist p (1., 0.5); H.dist p (-1., 0.5)] end) in
+    let module Kh = Kd.Kd(H)(struct let to_e (x, y) =
+                                      let r = H.dist (x, y) (0., 1.) in
+                                      let theta = atan2 (y -. 1.) (x *. y) in
+                                      [r; (exp r) *. cos theta] end) in
     let start_time = Sys.time () in
     let grid = Kh.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
     let fill_time = Sys.time () -. start_time in

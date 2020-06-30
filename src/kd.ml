@@ -69,7 +69,9 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float list en
       let rect = (List.map (fun x -> (x -. threshold, x +. threshold)) p') in
       let dists = List.map (fun q -> Space.dist q simpl_p) (find_in_range g rect) in
       match List.find_opt (fun d -> d < threshold) dists with
-      | None -> (insert g p' n simpl_p, true)
+      | None ->
+         (* Printf.printf "%f\n" ((float_of_int (List.length dists)) /. float_of_int (grid_size g)); flush stdout; *)
+         (insert g p' n simpl_p, true)
       | Some x -> (g, false)
 
     let fill_space threshold start_p =
