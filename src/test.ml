@@ -75,7 +75,7 @@ let ball_radii = [3.0; 4.0; 4.5; 5.0; 5.5; 6.0; 6.5; 6.75; 7.0; 7.25; 7.5; 7.75;
     P.xmax = max_in_list_int (List.map second_triple naive_pts);
     P.ymax = max_in_list_float (List.map third_triple naive_pts);
 *)
-    P.xmax = max_in_list_int (List.map second_triple kd_pts);
+    P.xmax = float_of_int (max_in_list_int (List.map second_triple kd_pts));
     P.ymax = max_in_list_float (List.map third_triple kd_pts);
     P.ylabeloffsets = 22;
     P.write_thresholds = true;
@@ -146,7 +146,7 @@ let run_para_test filename print_output =
     P.xmax = max_in_list_int (List.map second_triple naive_pts);
     P.ymax = max_in_list_float (List.map third_triple naive_pts);
 *)
-    P.xmax = max_in_list_int (List.map second_triple kd_pts);
+    P.xmax = float_of_int (max_in_list_int (List.map second_triple kd_pts));
     P.ymax = max_in_list_float (List.map third_triple kd_pts);
     P.ylabeloffsets = 22;
     P.write_thresholds = true;

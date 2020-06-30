@@ -26,7 +26,7 @@ type settings = {
 }
 
 type graph_settings = {
-  xmax : int;
+  xmax : float;
   ymax : float;
   xnumticks : int;
   ynumticks : int;
@@ -50,7 +50,7 @@ let default = {
 }
 
 let default_graph = {
-  xmax = 5000;
+  xmax = 5000.0;
   ymax = 50.0;
   xnumticks = 5;
   ynumticks = 5;
@@ -111,13 +111,13 @@ let ylabel fp gstgs str =
   show_str fp str;
   output_string fp "grestore\n"
 
-(* print an integer value on the x-axis *)
+(* print a float value on the x-axis *)
 let xtick fp xf gstgs (n : int) =
   let y' = gstgs.ymargin - gstgs.xlabeloffsets in  (* offset the label *)
-  let x = n * gstgs.xmax / gstgs.xnumticks in
-  let coord_x = int_of_float (float_of_int x *. xf) + gstgs.xmargin in
-  output_string fp (sprintf "%d %d xtick\n" coord_x gstgs.ymargin);
-  output_string fp (sprintf "%d %d moveto (%d) show\n" (coord_x + 2) y' x)
+  let x = float_of_int n *. gstgs.xmax /. float_of_int gstgs.xnumticks in
+  let coord_x = x *. xf +. float_of_int gstgs.xmargin in
+  output_string fp (sprintf "%f %d xtick\n" coord_x gstgs.ymargin);
+  output_string fp (sprintf "%f %d moveto (%.1f) show\n" (coord_x +. 2.0) y' x)
 
 (* print a float value on the x-axis *)
 let ytick fp yf gstgs (n : int) =
@@ -137,7 +137,7 @@ let draw_graph fp gstgs point_list_list =
   xlabel fp gstgs "     NO. OF POINTS";
   ylabel fp gstgs "     TIME (s)";
   (* scale factors *)
-  let xf = (612.0 -. (2.0 *. xmar)) /. (float_of_int gstgs.xmax) in
+  let xf = (612.0 -. (2.0 *. xmar)) /. gstgs.xmax in
   let yf = (792.0 -. (2.0 *. ymar)) /. gstgs.ymax in
   let draw col (threshold, x',y') =
     let x = float_of_int x' *. xf +. xmar in
@@ -157,6 +157,30 @@ let draw_graph fp gstgs point_list_list =
   List.iter draw_one_xtick xticks;
   List.iter draw_one_ytick yticks;
   List.iter draw_one_list point_list_list;
+  set_colour fp black
+
+let scatterplot fp gstgs points =
+  let xmar = float_of_int gstgs.xmargin in
+  let ymar = float_of_int gstgs.ymargin in
+  let rec range m n = if m = n then [m] else m :: range (m+1) n in
+  let xticks = range 0 gstgs.xnumticks in
+  let yticks = range 0 gstgs.ynumticks in
+  draw_axes fp gstgs;
+  (* scale factors *)
+  let xf = (612.0 -. (2.0 *. xmar)) /. gstgs.xmax in
+  let yf = (792.0 -. (2.0 *. ymar)) /. gstgs.ymax in
+  let draw col (x',y') =
+    let x = x' *. xf +. xmar in
+    let y = y' *. yf +. ymar in
+    set_colour fp col;
+    dot fp x y;
+  in
+  let draw_one_list (col, l) = List.iter (draw col) l in
+  let draw_one_xtick = xtick fp xf gstgs in
+  let draw_one_ytick = ytick fp yf gstgs in
+  List.iter draw_one_xtick xticks;
+  List.iter draw_one_ytick yticks;
+  List.iter draw_one_list points;
   set_colour fp black
 
 let draw_point fp stgs ((x, y), r, (x', y')) =
