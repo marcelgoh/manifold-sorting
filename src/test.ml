@@ -22,7 +22,6 @@ module N = Naive.Naive(T)
 module K = Kd.Kd(T)(struct let to_e = para_to_euclidean end)
 
 module Nh = Naive.Naive(H)
-module Kh = Kd.Kd(H)(struct let to_e p = [H.dist p (1., 0.5); H.dist p (-1., 0.5)] end)
 
 let first_triple (a, _, _) = a
 let second_triple (_, b, _) = b
@@ -51,6 +50,7 @@ let run_halfplane_test filename print_output =
     (ball_radius, Nh.grid_size grid, fill_time)
   in
   let build_kd_pts idx ball_radius =
+    let module Kh = Kd.Kd(H)(struct let to_e p = [H.dist p (1., 0.5); H.dist p (-1., 0.5)] end) in
     let start_time = Sys.time () in
     let grid = Kh.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
     let fill_time = Sys.time () -. start_time in
