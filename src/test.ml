@@ -19,7 +19,7 @@ let para_to_euclidean (x, y) =
   [cos (2. *. pi *. x') *. l; cos (2. *. pi *. y') *. l]
 
 module N = Naive.Naive(T)
-module K = Kd.Kd(T)(struct let to_e = para_to_euclidean end)
+module K = Kd.Kd(T)(struct let to_e p t = let p' = para_to_euclidean p in (p', List.map (fun x -> (x +. t, x -. t)) p') end)
 
 module Nh = Naive.Naive(H)
 
@@ -50,13 +50,21 @@ let run_halfplane_test filename print_output =
     (ball_radius, Nh.grid_size grid, fill_time)
   in
   let build_kd_pts idx ball_radius =
-    let module Kh = Kd.Kd(H)(struct let to_e (x, y) =
+    let module Kh = Kd.Kd(H)(struct let to_e (x, y) threshold =
+                                      (* let p' = [H.dist (x, y) (-1., 0.5); H.dist (x, y) (1., 0.5)] in
+                                       * (p', List.map (fun x -> (x -. threshold, x +. threshold)) p') *)
                                       let r = H.dist (x, y) (0., 1.) in
-                                      let theta = atan2 (y -. 1.) (x *. y) in
-                                      [r; (exp r) *. cos theta] end) in
+                                      let theta = atan2 (x ** 2. +. y ** 2. -. 1.) (2. *. x) in
+                                      let rect = [(r -. threshold, r +. threshold);
+                                                  (if r <= threshold then (-4., 4.) else
+                                                     let d = threshold /. (sinh (r -. threshold)) in
+                                                     ((cos theta) -. d, (cos theta) +. d)
+                                                 )] in
+                                      [r; cos theta], rect end) in
     let start_time = Sys.time () in
     let grid = Kh.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
     let fill_time = Sys.time () -. start_time in
+    Printf.printf "%d %f\n" (Kh.grid_size grid) fill_time;
     if print_output then
       plot_one_grid (filename ^ "kd") ball_radius (300.0 /. (sinh ball_radius))
         (fun g -> List.map (fun p -> H.to_screen p 0.5) (Kh.to_list g)) Kh.grid_size idx grid;
@@ -68,7 +76,7 @@ let run_halfplane_test filename print_output =
 (*   let ball_radii = [3.0; 4.0; 4.5; 5.0; 5.5; 6.0; 6.5; 6.75; 7.0; 7.25; 7.5] in *)
 let ball_radii = [3.0; 4.0; 4.5; 5.0; 5.5; 6.0; 6.5; 6.75; 7.0; 7.25; 7.5; 7.75; 8.0; 8.25; 8.5; 8.75] in
   Printf.printf "kd\n";
-  let kd_pts = List.mapi (fun i r -> Printf.printf "%f\n" r; flush stdout; build_kd_pts i r) ball_radii in
+  let kd_pts = List.mapi (fun i r -> Printf.printf "%f " r; flush stdout; build_kd_pts i r) ball_radii in
 (*
   Printf.printf "naive\n";
   let naive_pts = List.mapi (fun i r -> Printf.printf "%f\n" r; flush stdout; build_naive_pts i r) ball_radii in

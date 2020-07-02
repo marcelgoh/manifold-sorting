@@ -1,6 +1,6 @@
 module S = Queue
 
-module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float list end) : Grid.Grid with type point := Space.point =
+module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float -> float list * (float * float) list end) : Grid.Grid with type point := Space.point =
   struct
     type node_info = {
         axis : int;
@@ -65,8 +65,7 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float list en
 
     let add_to_grid g threshold p n =
       let simpl_p = Space.simpl p in
-      let p' = F.to_e simpl_p in
-      let rect = (List.map (fun x -> (x -. threshold, x +. threshold)) p') in
+      let p', rect = F.to_e simpl_p threshold in
       let dists = List.map (fun q -> Space.dist q simpl_p) (find_in_range g rect) in
       match List.find_opt (fun d -> d < threshold) dists with
       | None ->

@@ -6,10 +6,6 @@ module M = Metric
 module P = Postscript
 module T = Test
 module H = Halfplane.Halfplane
-module K = Kd.Kd(H)(struct let to_e (x, y) =
-                             let r = H.dist (x, y) (0., 1.) in
-                             let theta = atan2 (y -. 1.) (x *. y) in
-                             [r; theta *. exp r] end)
 module N = Naive.Naive(H)
 
 let _ =
