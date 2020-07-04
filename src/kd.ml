@@ -70,41 +70,44 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float -> floa
       match List.find_opt (fun d -> d < threshold) dists with
       | None ->
          (* Printf.printf "%f\n" ((float_of_int (List.length dists)) /. float_of_int (grid_size g)); flush stdout; *)
-         (insert g p' n simpl_p, true)
-      | Some x -> (g, false)
+         (insert g p' n simpl_p, true, List.length dists)
+      | Some x -> (g, false, 0)
 
     let fill_space threshold start_p =
       let g = Empty in
       let stack = S.create () in
       S.push start_p stack;
-      let rec loop grid i =
+      let rec loop grid i comp_counts acc =
         if S.is_empty stack then
-          grid
+          (grid, List.rev comp_counts)
         else
           let p = S.pop stack in
-          let (newgrid, added) = add_to_grid grid threshold p i in
+          let (newgrid, added, count) = add_to_grid grid threshold p i in
           if added then (
             List.iter (fun q -> S.push q stack) (Space.get_local_cover threshold p); (* pushes 6 new points on stack *)
-            loop newgrid (i + 1)
+            loop newgrid (i + 1) ((acc + count)::comp_counts) 0 (* reset accumulator *)
           ) else
-            loop newgrid i
+            (* we still need to add the number of counts even though we're not recording yet *)
+            loop newgrid i comp_counts (acc + count)
       in
-      loop g 0
+      loop g 0 [] 0
+
+    (* returns the grid as well as a list of comparison counts *)
     let fill_ball center r threshold start_p =
       let g = Empty in
       let stack = S.create () in
       S.push start_p stack;
-      let rec loop grid i =
+      let rec loop grid i comp_counts acc =
         if S.is_empty stack then
-          grid
+          (grid, List.rev comp_counts)
         else
           let p = S.pop stack in
-          let (newgrid, added) = add_to_grid grid threshold p i in
+          let (newgrid, added, count) = add_to_grid grid threshold p i in
           if added then (
             List.iter (fun q -> S.push q stack) (List.filter (fun x -> r > Space.dist x center) (Space.get_local_cover threshold p)); (* pushes 6 new points on stack *)
-            loop newgrid (i + 1)
+            loop newgrid (i + 1) ((acc + count)::comp_counts) 0
           ) else
-            loop newgrid i
+            loop newgrid i comp_counts (acc + count)
       in
-      loop g 0
+      loop g 0 [] 0
   end

@@ -31,7 +31,7 @@ type graph_settings = {
   xnumticks : int;
   ynumticks : int;
   xmargin : int;  (* (xmargin, ymargin) is the origin; an equal amount of space is ... *)
-  ymargin : int;  (* left at the top and right side of the graph as well *)
+  ymargin : int;  (*   left at the top and right side of the graph as well *)
   xaxislabeloffset : int;
   yaxislabeloffset : int;
   xlabeloffsets : int;
@@ -111,31 +111,31 @@ let ylabel fp gstgs str =
   show_str fp str;
   output_string fp "grestore\n"
 
-(* print a float value on the x-axis *)
+(* print an int value on the x-axis *)
 let xtick fp xf gstgs (n : int) =
   let y' = gstgs.ymargin - gstgs.xlabeloffsets in  (* offset the label *)
   let x = float_of_int n *. gstgs.xmax /. float_of_int gstgs.xnumticks in
   let coord_x = x *. xf +. float_of_int gstgs.xmargin in
   output_string fp (sprintf "%f %d xtick\n" coord_x gstgs.ymargin);
-  output_string fp (sprintf "%f %d moveto (%.1f) show\n" (coord_x +. 2.0) y' x)
+  output_string fp (sprintf "%f %d moveto (%d) show\n" (coord_x +. 2.0) y' (int_of_float x))
 
-(* print a float value on the x-axis *)
+(* print an int value on the x-axis *)
 let ytick fp yf gstgs (n : int) =
   let x' = gstgs.xmargin - gstgs.ylabeloffsets in  (* offset the label *)
   let y = float_of_int n *. gstgs.ymax /. float_of_int gstgs.ynumticks in
   let coord_y = y *. yf +. float_of_int gstgs.ymargin in
   output_string fp (sprintf "%d %f ytick\n" gstgs.xmargin coord_y);
-  output_string fp (sprintf "%d %f moveto (%.1f) show\n" x' (coord_y +. 3.0) y)
+  output_string fp (sprintf "%d %f moveto (%d) show\n" x' (coord_y +. 3.0) (int_of_float y))
 
-let draw_graph fp gstgs point_list_list =
+let draw_graph fp gstgs point_list_list xstr ystr =
   let xmar = float_of_int gstgs.xmargin in
   let ymar = float_of_int gstgs.ymargin in
   let rec range m n = if m = n then [m] else m :: range (m+1) n in
   let xticks = range 0 gstgs.xnumticks in
   let yticks = range 0 gstgs.ynumticks in
   draw_axes fp gstgs;
-  xlabel fp gstgs "     NO. OF POINTS";
-  ylabel fp gstgs "     TIME (s)";
+  xlabel fp gstgs ("     " ^ xstr);
+  ylabel fp gstgs ("     " ^ ystr);
   (* scale factors *)
   let xf = (612.0 -. (2.0 *. xmar)) /. gstgs.xmax in
   let yf = (792.0 -. (2.0 *. ymar)) /. gstgs.ymax in
