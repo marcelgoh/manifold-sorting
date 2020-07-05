@@ -41,29 +41,31 @@ let halfplane_comp_test filename ball_radius =
                                       in
                                       [r; cos theta], rect end)
   in
-  let make_triple i c = (0.0, i+1, float_of_int c) in
+  let make_triple i (c, added) = (added, (float_of_int (i+1), float_of_int c)) in
 (*
   let (_, naive_comp_counts) = Nh.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
   let naive_pts = List.mapi make_triple naive_comp_counts in
 *)
   let (_, kd_comp_counts) = Kh.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
   let kd_pts = List.mapi make_triple kd_comp_counts in
+  let added_pts = List.map snd (List.filter fst kd_pts) in
+  let excluded_pts = List.map snd (List.filter (fun x -> not (fst x)) kd_pts) in
   let graph_settings = { P.default_graph with
-    P.xmax = float_of_int (max_in_list_int (List.map second_triple kd_pts));
+    P.xmax = max_in_list_float (List.map (fun x -> fst (snd x)) kd_pts);
 (*     P.ymax = max_in_list_float (List.map third_triple naive_pts); *)
-    P.ymax = max_in_list_float (List.map third_triple kd_pts);
+    P.ymax = max_in_list_float (List.map (fun x -> snd (snd x)) kd_pts);
     P.ylabeloffsets = 22;
     P.write_thresholds = false;
   } in
   Printf.printf "KD:\n";
-  List.iter (fun (_, i, c) -> Printf.printf "%d %f\n" i c) kd_pts;
+  (* List.iter (fun (_, i, c) -> Printf.printf "%d %f\n" i c) kd_pts; *)
 (*
   Printf.printf "NAIVE:\n";
   List.iter (fun (_, i, c) -> Printf.printf "%d %f\n" i c) naive_pts;
 *)
   let fp = P.create_ps_file ("test/" ^ filename) in
 (*   P.draw_graph fp graph_settings [(P.green, kd_pts); (P.red, naive_pts)] "POINT" ""; *)
-  P.draw_graph fp graph_settings [(P.green, kd_pts)] "POINT" "";
+  P.scatterplot fp graph_settings [(P.green, added_pts); (P.red, excluded_pts)];
   P.close_ps_file fp
 
 let run_halfplane_test filename print_output =

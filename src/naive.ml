@@ -40,7 +40,7 @@ module Naive (Space : Space.Space) = (struct
     let g = create_grid () in
     let stack = S.create () in
     S.push start_p stack;
-    let rec loop comp_counts acc =
+    let rec loop comp_counts =
       if S.is_empty stack then
         (g, List.rev comp_counts)  (* return the grid *)
       else
@@ -51,17 +51,17 @@ module Naive (Space : Space.Space) = (struct
         if flag then (
             (* Printf.printf "added\n"; *)
             List.iter (fun q -> S.push q stack) offsets; (* pushes 6 new points on stack *)
-            loop ((acc + count)::comp_counts) 0
+            loop ((count, true) :: comp_counts)
         ) else
-          loop comp_counts (acc + count)
+          loop ((count, false) :: comp_counts)
     in
-    loop [] 0
+    loop []
 
   let fill_ball center r threshold start_p =
     let g = create_grid () in
     let stack = S.create () in
     S.push start_p stack;
-    let rec loop comp_counts acc =
+    let rec loop comp_counts =
       if S.is_empty stack then
         (g, List.rev comp_counts)  (* return the grid *)
       else
@@ -72,11 +72,11 @@ module Naive (Space : Space.Space) = (struct
         if flag then (
             (* Printf.printf "added\n"; *)
             List.iter (fun q -> S.push q stack) offsets; (* pushes 6 new points on stack *)
-            loop ((acc + count)::comp_counts) 0
+            loop ((count, true) :: comp_counts)
         ) else
           (* else *)
           (* Printf.printf "not added\n"; *)
-          loop comp_counts (acc + count)
+          loop ((count, false) :: comp_counts)
     in
-    loop [] 0
+    loop []
 end : Grid.Grid with type point := Space.point)

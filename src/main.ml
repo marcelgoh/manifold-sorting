@@ -34,4 +34,4 @@ let _ =
    *  * P.plot_grid fp { P.default with scale=15. } [H.to_screen (0., 1.) 0.5]; *\)
    * P.close_ps_file fp; *)
 (*   Test.run_halfplane_test "kdonlyhalfplane" true *)
-  Test.halfplane_comp_test "hi" 7.5
+  Test.halfplane_comp_test "hi" 8.0
