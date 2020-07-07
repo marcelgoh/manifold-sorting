@@ -22,6 +22,16 @@ let para_to_euclidean (x, y) =
 module N = Naive.Naive(T)
 module K = Kd.Kd(T)(struct let to_e p t = let p' = para_to_euclidean p in (p', List.map (fun x -> (x -. t, x +. t)) p') end)
 module Ke = Kd.Kd(E)(struct let to_e (x, y) t = ([x; y], [(x -. t, x +. t); (y -. t, y +. t)]) end)
+module Ke2 = Kd.Kd(E)(struct let to_e (x, y) t =
+                              let r = E.dist (x, y) (0., 1.) in
+                              let theta = atan2 y x in
+                              let rect = [(r -. t, r +. t);
+                                          (if r <= t then (-4., 4.) else
+                                             let d = t /. (r -. t) in
+                                             (theta -. d, theta +. d)
+                                         )]
+                              in
+                              ([r; theta], rect) end)
 
 module Nh = Naive.Naive(H)
 
@@ -49,9 +59,13 @@ let halfplane_comp_test filename ball_radius =
                                                   (if r <= threshold then (-4., 4.) else
                                                      let d = threshold /. (sinh (r -. threshold)) in
                                                      ((cos theta) -. d, (cos theta) +. d)
+                                                  );
+                                                  (if r <= threshold then (-4., 4.) else
+                                                     let d = threshold /. (sinh (r -. threshold)) in
+                                                     ((sin theta) -. d, (sin theta) +. d)
                                                  )]
                                       in
-                                      [r; cos theta], rect end)
+                                      [r; cos theta; sin theta], rect end)
   in
   let make_triple i (c, added) = (added, (float_of_int (i+1), float_of_int c)) in
 (*
@@ -59,7 +73,7 @@ let halfplane_comp_test filename ball_radius =
   let naive_pts = List.mapi make_triple naive_comp_counts in
  *)
 (*   let (_, kd_comp_counts) = Ke.fill_ball (0., 0.) 70.0 0.6 (0.0, 0.0) in *)
-(*   let (_, kd_comp_counts) = K.fill_space 0.4 (27.5, 29.5) in *)
+  (*   let (_, kd_comp_counts) = K.fill_space 0.4 (27.5, 29.5) in *)
   let (grid, kd_comp_counts) = Kh.fill_ball (0., 1.) ball_radius 0.5 (0., 1.) in
   let kd_pts = List.mapi make_triple kd_comp_counts in
   let added_pts = List.map snd (List.filter fst kd_pts) in
@@ -81,8 +95,9 @@ let halfplane_comp_test filename ball_radius =
 (*   P.draw_graph fp graph_settings [(P.green, kd_pts); (P.red, naive_pts)] "POINT" ""; *)
   P.scatterplot fp graph_settings [(P.green, added_pts); (P.red, excluded_pts)];
   P.close_ps_file fp;
-  plot_one_grid "problempoints" ball_radius (300.0 /. (sinh ball_radius))
-       (fun g -> List.map (fun p -> H.to_screen p 0.5) (Kh.to_list g)) Kh.grid_size 0 grid
+  Printf.printf "%d\n" (Kh.grid_size grid); ()
+  (* plot_one_grid "problempoints" ball_radius (300.0 /. (sinh ball_radius))
+   *      (fun g -> List.map (fun p -> let (x, y) = p in Printf.printf "(%f, %f)\n%f, %f, %f\n%f\n\n" (fst p) (snd p) (H.dist p (0., 1.)) (atan2 (x ** 2. +. y ** 2. -. 1.) (2. *. x)) (cos (atan2 (x ** 2. +. y ** 2. -. 1.) (2. *. x))) (sqrt (x ** 2. +. y ** 2.)); H.to_screen p 0.5) (Kh.to_list g)) Kh.grid_size 0 grid *)
 
 let run_halfplane_test filename print_output =
   let build_naive_pts idx ball_radius =
