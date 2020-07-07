@@ -67,6 +67,7 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float -> floa
       let simpl_p = Space.simpl p in
       let p', rect = F.to_e simpl_p threshold in
       let dists = List.map (fun q -> Space.dist q simpl_p) (find_in_range g rect) in
+      (* Printf.printf "(%f, %f) (%f, %f)\n" (fst (List.nth rect 0)) (snd (List.nth rect 0)) (fst (List.nth rect 1)) (snd (List.nth rect 1)); flush stdout; *)
       match List.find_opt (fun d -> d < threshold) dists with
       | None ->
          (* Printf.printf "%f\n" ((float_of_int (List.length dists)) /. float_of_int (grid_size g)); flush stdout; *)
@@ -103,6 +104,7 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float -> floa
         else
           let p = S.pop stack in
           let (newgrid, added, count) = add_to_grid grid threshold p i in
+          (* Printf.printf "%d\n" (grid_size grid); flush stdout; *)
           if added then (
             List.iter (fun q -> S.push q stack) (List.filter (fun x -> r > Space.dist x center) (Space.get_local_cover threshold p)); (* pushes 6 new points on stack *)
             loop newgrid (i + 1) ((count, true) :: comp_counts)

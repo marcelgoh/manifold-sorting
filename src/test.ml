@@ -7,6 +7,7 @@ let u = (50.0, -1.0)
 let v = (5.0, 60.0)
 module T = (val Torus.torus u v : Space.Space with type point = float * float)
 module H = Halfplane.Halfplane
+module E = Euclidean.Euclidean
 
 let pi = (acos (-.1.))
 
@@ -19,7 +20,8 @@ let para_to_euclidean (x, y) =
   [cos (2. *. pi *. x') *. l; cos (2. *. pi *. y') *. l]
 
 module N = Naive.Naive(T)
-module K = Kd.Kd(T)(struct let to_e p t = let p' = para_to_euclidean p in (p', List.map (fun x -> (x +. t, x -. t)) p') end)
+module K = Kd.Kd(T)(struct let to_e p t = let p' = para_to_euclidean p in (p', List.map (fun x -> (x -. t, x +. t)) p') end)
+module Ke = Kd.Kd(E)(struct let to_e (x, y) t = ([x; y], [(x -. t, x +. t); (y -. t, y +. t)]) end)
 
 module Nh = Naive.Naive(H)
 
@@ -45,8 +47,9 @@ let halfplane_comp_test filename ball_radius =
 (*
   let (_, naive_comp_counts) = Nh.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
   let naive_pts = List.mapi make_triple naive_comp_counts in
-*)
-  let (_, kd_comp_counts) = Kh.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
+ *)
+  (* let (_, kd_comp_counts) = Ke.fill_ball (0., 0.) 70.0 0.6 (0.0, 0.0) in *)
+  let (_, kd_comp_counts) = K.fill_space 0.4 (27.5, 29.5) in
   let kd_pts = List.mapi make_triple kd_comp_counts in
   let added_pts = List.map snd (List.filter fst kd_pts) in
   let excluded_pts = List.map snd (List.filter (fun x -> not (fst x)) kd_pts) in
@@ -57,8 +60,8 @@ let halfplane_comp_test filename ball_radius =
     P.ylabeloffsets = 22;
     P.write_thresholds = false;
   } in
-  Printf.printf "KD:\n";
-  (* List.iter (fun (_, i, c) -> Printf.printf "%d %f\n" i c) kd_pts; *)
+  (* Printf.printf "KD:\n";
+   * List.iter (fun (_, (i, c)) -> Printf.printf "%f %f\n" i c) kd_pts; *)
 (*
   Printf.printf "NAIVE:\n";
   List.iter (fun (_, i, c) -> Printf.printf "%d %f\n" i c) naive_pts;
