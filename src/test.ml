@@ -30,6 +30,16 @@ let second_triple (_, b, _) = b
 let third_triple (_, _, c) = c
 let max_in_list_float = List.fold_left max min_float
 let max_in_list_int = List.fold_left max min_int
+let plot_one_grid newfilename radius scale to_list grid_size idx grid =
+  let settings = { P.default with
+    P.xorigin = 306;
+    P.yorigin = 20;
+  } in
+  let fp = P.create_ps_file newfilename in
+  P.plot_grid fp { settings with scale=scale } (to_list grid);
+  output_string fp (sprintf "30 750 moveto (RADIUS:     %f) show\n" radius);
+  output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (grid_size grid));
+  P.close_ps_file fp
 
 let halfplane_comp_test filename ball_radius =
   let module Kh = Kd.Kd(H)(struct let to_e (x, y) threshold =
@@ -48,8 +58,9 @@ let halfplane_comp_test filename ball_radius =
   let (_, naive_comp_counts) = Nh.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
   let naive_pts = List.mapi make_triple naive_comp_counts in
  *)
-  (* let (_, kd_comp_counts) = Ke.fill_ball (0., 0.) 70.0 0.6 (0.0, 0.0) in *)
-  let (_, kd_comp_counts) = K.fill_space 0.4 (27.5, 29.5) in
+(*   let (_, kd_comp_counts) = Ke.fill_ball (0., 0.) 70.0 0.6 (0.0, 0.0) in *)
+(*   let (_, kd_comp_counts) = K.fill_space 0.4 (27.5, 29.5) in *)
+  let (grid, kd_comp_counts) = Kh.fill_ball (0., 1.) ball_radius 0.5 (0., 1.) in
   let kd_pts = List.mapi make_triple kd_comp_counts in
   let added_pts = List.map snd (List.filter fst kd_pts) in
   let excluded_pts = List.map snd (List.filter (fun x -> not (fst x)) kd_pts) in
@@ -69,21 +80,11 @@ let halfplane_comp_test filename ball_radius =
   let fp = P.create_ps_file ("test/" ^ filename) in
 (*   P.draw_graph fp graph_settings [(P.green, kd_pts); (P.red, naive_pts)] "POINT" ""; *)
   P.scatterplot fp graph_settings [(P.green, added_pts); (P.red, excluded_pts)];
-  P.close_ps_file fp
+  P.close_ps_file fp;
+  plot_one_grid "problempoints" ball_radius (300.0 /. (sinh ball_radius))
+       (fun g -> List.map (fun p -> H.to_screen p 0.5) (Kh.to_list g)) Kh.grid_size 0 grid
 
 let run_halfplane_test filename print_output =
-  let settings = { P.default with
-    P.xorigin = 306;
-    P.yorigin = 20;
-  } in
-  let plot_one_grid newfilename radius scale to_list grid_size idx grid =
-    let radius_str = Str.global_replace (Str.regexp_string ".") "-" (sprintf "%g" radius) in
-    let fp = P.create_ps_file (sprintf "out/%s--%s" newfilename radius_str) in
-    P.plot_grid fp { settings with scale=scale } (to_list grid);
-    output_string fp (sprintf "30 750 moveto (RADIUS:     %f) show\n" radius);
-    output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (grid_size grid));
-    P.close_ps_file fp
-  in
   let build_naive_pts idx ball_radius =
     let start_time = Sys.time () in
     let (grid, _) = Nh.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
@@ -109,9 +110,12 @@ let run_halfplane_test filename print_output =
     let (grid, _) = Kh.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
     let fill_time = Sys.time () -. start_time in
     Printf.printf "%d %f\n" (Kh.grid_size grid) fill_time;
-    if print_output then
-      plot_one_grid (filename ^ "kd") ball_radius (300.0 /. (sinh ball_radius))
-        (fun g -> List.map (fun p -> H.to_screen p 0.5) (Kh.to_list g)) Kh.grid_size idx grid;
+    if print_output then (
+      let radius_str = Str.global_replace (Str.regexp_string ".") "-" (sprintf "%g" ball_radius) in
+      let newfilename = (sprintf "out/%s--%s" filename radius_str) in
+      plot_one_grid (newfilename ^ "kd") ball_radius (300.0 /. (sinh ball_radius))
+          (fun g -> List.map (fun p -> H.to_screen p 0.5) (Kh.to_list g)) Kh.grid_size idx grid
+    );
     (ball_radius, Kh.grid_size grid, fill_time)
   in
   let fp = P.create_ps_file ("test/" ^ filename) in
