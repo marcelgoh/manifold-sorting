@@ -63,7 +63,7 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float -> floa
       in
       insertaxis g p newaxis (List.length p) n p'
 
-    let add_to_grid g g' threshold p n =
+    let add_to_grid g threshold p n =
       let simpl_p = Space.simpl p in
       let p', rect = F.to_e simpl_p threshold in
       let dists = List.map (fun q -> Space.dist q simpl_p) (find_in_range g rect) in
@@ -71,50 +71,45 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float -> floa
       match List.find_opt (fun d -> d < threshold) dists with
       | None ->
          (* Printf.printf "%f\n" ((float_of_int (List.length dists)) /. float_of_int (grid_size g)); flush stdout; *)
-          if List.length dists > 48 then
-            (insert g p' n simpl_p, insert g' p' n simpl_p, true, List.length dists)
-          else
-            (insert g p' n simpl_p, g', true, List.length dists)
-      | Some x -> (g, g', false, List.length dists)
+         (insert g p' n simpl_p, true, List.length dists)
+      | Some x -> (g, false, List.length dists)
 
     let fill_space threshold start_p =
       let g = Empty in
-      let g' = Empty in
       let stack = S.create () in
       S.push start_p stack;
-      let rec loop grid gridlet i comp_counts =
+      let rec loop grid i comp_counts =
         if S.is_empty stack then
           (grid, List.rev comp_counts)
         else
           let p = S.pop stack in
-          let (newgrid, newgridlet, added, count) = add_to_grid grid gridlet threshold p i in
+          let (newgrid, added, count) = add_to_grid grid threshold p i in
           if added then (
             List.iter (fun q -> S.push q stack) (Space.get_local_cover threshold p); (* pushes 6 new points on stack *)
-            loop newgrid newgridlet (i + 1) ((count, true) :: comp_counts) (* reset accumulator *)
+            loop newgrid (i + 1) ((count, true) :: comp_counts) (* reset accumulator *)
           ) else
             (* we still need to add the number of counts even though we're not recording yet *)
-            loop newgrid newgridlet i ((count, false) :: comp_counts)
+            loop newgrid i ((count, false) :: comp_counts)
       in
-      loop g g' 0 []
+      loop g 0 []
 
     (* returns the grid as well as a list of comparison counts *)
     let fill_ball center r threshold start_p =
       let g = Empty in
-      let g' = Empty in
       let stack = S.create () in
       S.push start_p stack;
-      let rec loop grid gridlet i comp_counts =
+      let rec loop grid i comp_counts =
         if S.is_empty stack then
-          (gridlet, List.rev comp_counts)
+          (grid, List.rev comp_counts)
         else
           let p = S.pop stack in
-          let (newgrid, newgridlet, added, count) = add_to_grid grid gridlet threshold p i in
+          let (newgrid, added, count) = add_to_grid grid threshold p i in
           (* Printf.printf "%d\n" (grid_size grid); flush stdout; *)
           if added then (
             List.iter (fun q -> S.push q stack) (List.filter (fun x -> r > Space.dist x center) (Space.get_local_cover threshold p)); (* pushes 6 new points on stack *)
-            loop newgrid newgridlet (i + 1) ((count, true) :: comp_counts)
+            loop newgrid (i + 1) ((count, true) :: comp_counts)
           ) else
-            loop newgrid newgridlet i ((count, false) :: comp_counts)
+            loop newgrid i ((count, false) :: comp_counts)
       in
-      loop g g' 0 []
+      loop g 0 []
   end
