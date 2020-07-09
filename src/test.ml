@@ -41,11 +41,34 @@ module Kh = Kd.Kd(H)(struct let to_e (x, y) threshold =
                                              (if r <= threshold then (-4., 4.) else
                                                 let d = threshold /. (sinh (r -. threshold)) in
                                                 ((cos theta) -. d, (cos theta) +. d)
+                                             )]
+                                 in
+                                 [r; cos theta], rect end)
+module Kh2 = Kd.Kd(H)(struct let to_e (x, y) threshold =
+                                 let r = H.dist (x, y) (0., 1.) in
+                                 let theta = atan2 (x ** 2. +. y ** 2. -. 1.) (2. *. x) in
+                                 let rect = [(r -. threshold, r +. threshold);
+                                             (if r <= threshold then (-4., 4.) else
+                                                let a = threshold /. (sinh (r -. threshold)) in
+                                                let d = (a +. abs_float (sin theta)) *. a in
+                                                ((cos theta) -. d, (cos theta) +. d)
+                                             )]
+                                 in
+                                 [r; cos theta], rect end)
+module Kh3 = Kd.Kd(H)(struct let to_e (x, y) threshold =
+                                 let r = H.dist (x, y) (0., 1.) in
+                                 let theta = atan2 (x ** 2. +. y ** 2. -. 1.) (2. *. x) in
+                                 let rect = [(r -. threshold, r +. threshold);
+                                             (if r <= threshold then (-4., 4.) else
+                                                let a = threshold /. (sinh (r -. threshold)) in
+                                                let d = min a ((a +. abs_float (sin theta)) *. a) in
+                                                ((cos theta) -. d, (cos theta) +. d)
                                              );
                                              (if r <= threshold then (-4., 4.) else
-                                                let d = threshold /. (sinh (r -. threshold)) in
+                                                let a = threshold /. (sinh (r -. threshold)) in
+                                                let d = min a ((a +. abs_float (cos theta)) *. a) in
                                                 ((sin theta) -. d, (sin theta) +. d)
-                                            )]
+                                             )]
                                  in
                                  [r; cos theta; sin theta], rect end)
 
@@ -74,13 +97,14 @@ let halfplane_comp_test filename ball_radius =
 (*   let (_, kd_comp_counts) = Ke.fill_ball (0., 0.) 70.0 0.6 (0.0, 0.0) in *)
   (*   let (_, kd_comp_counts) = K.fill_space 0.4 (27.5, 29.5) in *)
   let (grid, kd_comp_counts) = Kh.fill_ball (0., 1.) ball_radius 0.5 (0., 1.) in
+  let (grid, kd_comp_counts) = Kh3.fill_ball (0., 1.) ball_radius 0.5 (0., 1.) in
   let kd_pts = Utils.tail_mapi make_triple kd_comp_counts in
-  let added_pts = List.map snd (List.filter fst kd_pts) in
-  let excluded_pts = List.map snd (List.filter (fun x -> not (fst x)) kd_pts) in
+  let added_pts = List.rev_map snd (List.filter fst kd_pts) in
+  let excluded_pts = List.rev_map snd (List.filter (fun x -> not (fst x)) kd_pts) in
   let graph_settings = { P.default_graph with
-    P.xmax = max_in_list_float (List.map (fun x -> fst (snd x)) kd_pts);
+    P.xmax = max_in_list_float (List.rev_map (fun x -> fst (snd x)) kd_pts);
 (*     P.ymax = max_in_list_float (List.map third_triple naive_pts); *)
-    P.ymax = max_in_list_float (List.map (fun x -> snd (snd x)) kd_pts);
+    P.ymax = max_in_list_float (List.rev_map (fun x -> snd (snd x)) kd_pts);
     P.ylabeloffsets = 22;
     P.write_thresholds = false;
   } in
@@ -94,7 +118,7 @@ let halfplane_comp_test filename ball_radius =
 (*   P.draw_graph fp graph_settings [(P.green, kd_pts); (P.red, naive_pts)] "POINT" ""; *)
   P.scatterplot fp graph_settings [(P.green, added_pts); (P.red, excluded_pts)];
   P.close_ps_file fp;
-  Printf.printf "%d\n" (Kh.grid_size grid); ()
+  Printf.printf "%d\n" (Kh3.grid_size grid); ()
   (* plot_one_grid "problempoints" ball_radius (300.0 /. (sinh ball_radius))
    *      (fun g -> List.map (fun p -> let (x, y) = p in Printf.printf "(%f, %f)\n%f, %f, %f\n%f\n\n" (fst p) (snd p) (H.dist p (0., 1.)) (atan2 (x ** 2. +. y ** 2. -. 1.) (2. *. x)) (cos (atan2 (x ** 2. +. y ** 2. -. 1.) (2. *. x))) (sqrt (x ** 2. +. y ** 2.)); H.to_screen p 0.5) (Kh.to_list g)) Kh.grid_size 0 grid *)
 
@@ -110,16 +134,16 @@ let run_halfplane_test filename print_output =
   in
   let build_kd_pts idx ball_radius =
     let start_time = Sys.time () in
-    let (grid, _) = Kh.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
+    let (grid, _) = Kh3.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
     let fill_time = Sys.time () -. start_time in
-    Printf.printf "%d %f\n" (Kh.grid_size grid) fill_time;
+    Printf.printf "%d %f\n" (Kh3.grid_size grid) fill_time;
     if print_output then (
       let radius_str = Str.global_replace (Str.regexp_string ".") "-" (sprintf "%g" ball_radius) in
       let newfilename = (sprintf "out/%s--%s" filename radius_str) in
       plot_one_grid (newfilename ^ "kd") ball_radius (300.0 /. (sinh ball_radius))
-          (fun g -> List.map (fun p -> H.to_screen p 0.5) (Kh.to_list g)) Kh.grid_size idx grid
+          (fun g -> List.map (fun p -> H.to_screen p 0.5) (Kh3.to_list g)) Kh3.grid_size idx grid
     );
-    (ball_radius, Kh.grid_size grid, fill_time)
+    (ball_radius, Kh3.grid_size grid, fill_time)
   in
   let fp = P.create_ps_file ("test/" ^ filename) in
 (*   let ball_radii = [3.0; 4.0; 4.5; 5.0; 5.5; 6.0; 6.5; 6.75; 7.0; 7.25; 7.5] in *)
