@@ -33,5 +33,5 @@ let _ =
    *  * P.plot_grid fp { P.default with scale=15. } (List.map (fun p -> H.to_screen p 0.5) (K.to_list grid));
    *  * P.plot_grid fp { P.default with scale=15. } [H.to_screen (0., 1.) 0.5]; *\)
    * P.close_ps_file fp; *)
-(*   Test.run_halfplane_test "kdonlyhalfplane" true *)
-  Test.halfplane_comp_test "hi" 8.0
+  Test.run_halfplane_test "kdonlyhalfplane" true
+(*   Test.halfplane_comp_test "hi" 8.0 *)

@@ -11,6 +11,14 @@ module E = Euclidean.Euclidean
 
 let pi = (acos (-.1.))
 
+let tail_mapi f x_list =
+  let rec helper idx acc x_list =
+    match x_list with
+    | [] -> List.rev acc
+    | x :: xs -> helper (idx + 1) ((f idx x) :: acc) xs
+  in
+  helper 0 [] x_list
+
 let para_to_euclidean (x, y) =
   let (a, c), (b, d) = u, v in
   let det = (a *. d) -. (c *. b) in
@@ -34,6 +42,20 @@ module Ke2 = Kd.Kd(E)(struct let to_e (x, y) t =
                               ([r; theta], rect) end)
 
 module Nh = Naive.Naive(H)
+module Kh = Kd.Kd(H)(struct let to_e (x, y) threshold =
+                                 let r = H.dist (x, y) (0., 1.) in
+                                 let theta = atan2 (x ** 2. +. y ** 2. -. 1.) (2. *. x) in
+                                 let rect = [(r -. threshold, r +. threshold);
+                                             (if r <= threshold then (-4., 4.) else
+                                                let d = threshold /. (sinh (r -. threshold)) in
+                                                ((cos theta) -. d, (cos theta) +. d)
+                                             );
+                                             (if r <= threshold then (-4., 4.) else
+                                                let d = threshold /. (sinh (r -. threshold)) in
+                                                ((sin theta) -. d, (sin theta) +. d)
+                                            )]
+                                 in
+                                 [r; cos theta; sin theta], rect end)
 
 let first_triple (a, _, _) = a
 let second_triple (_, b, _) = b
@@ -52,30 +74,15 @@ let plot_one_grid newfilename radius scale to_list grid_size idx grid =
   P.close_ps_file fp
 
 let halfplane_comp_test filename ball_radius =
-  let module Kh = Kd.Kd(H)(struct let to_e (x, y) threshold =
-                                      let r = H.dist (x, y) (0., 1.) in
-                                      let theta = atan2 (x ** 2. +. y ** 2. -. 1.) (2. *. x) in
-                                      let rect = [(r -. threshold, r +. threshold);
-                                                  (if r <= threshold then (-4., 4.) else
-                                                     let d = threshold /. (sinh (r -. threshold)) in
-                                                     ((cos theta) -. d, (cos theta) +. d)
-                                                  );
-                                                  (if r <= threshold then (-4., 4.) else
-                                                     let d = threshold /. (sinh (r -. threshold)) in
-                                                     ((sin theta) -. d, (sin theta) +. d)
-                                                 )]
-                                      in
-                                      [r; cos theta; sin theta], rect end)
-  in
   let make_triple i (c, added) = (added, (float_of_int (i+1), float_of_int c)) in
 (*
   let (_, naive_comp_counts) = Nh.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
-  let naive_pts = List.mapi make_triple naive_comp_counts in
+  let naive_pts = tail_mapi make_triple naive_comp_counts in
  *)
 (*   let (_, kd_comp_counts) = Ke.fill_ball (0., 0.) 70.0 0.6 (0.0, 0.0) in *)
   (*   let (_, kd_comp_counts) = K.fill_space 0.4 (27.5, 29.5) in *)
   let (grid, kd_comp_counts) = Kh.fill_ball (0., 1.) ball_radius 0.5 (0., 1.) in
-  let kd_pts = List.mapi make_triple kd_comp_counts in
+  let kd_pts = tail_mapi make_triple kd_comp_counts in
   let added_pts = List.map snd (List.filter fst kd_pts) in
   let excluded_pts = List.map snd (List.filter (fun x -> not (fst x)) kd_pts) in
   let graph_settings = { P.default_graph with
@@ -110,17 +117,6 @@ let run_halfplane_test filename print_output =
     (ball_radius, Nh.grid_size grid, fill_time)
   in
   let build_kd_pts idx ball_radius =
-    let module Kh = Kd.Kd(H)(struct let to_e (x, y) threshold =
-                                      (* let p' = [H.dist (x, y) (-1., 0.5); H.dist (x, y) (1., 0.5)] in
-                                       * (p', List.map (fun x -> (x -. threshold, x +. threshold)) p') *)
-                                      let r = H.dist (x, y) (0., 1.) in
-                                      let theta = atan2 (x ** 2. +. y ** 2. -. 1.) (2. *. x) in
-                                      let rect = [(r -. threshold, r +. threshold);
-                                                  (if r <= threshold then (-4., 4.) else
-                                                     let d = threshold /. (sinh (r -. threshold)) in
-                                                     ((cos theta) -. d, (cos theta) +. d)
-                                                 )] in
-                                      [r; cos theta], rect end) in
     let start_time = Sys.time () in
     let (grid, _) = Kh.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
     let fill_time = Sys.time () -. start_time in
@@ -137,10 +133,10 @@ let run_halfplane_test filename print_output =
 (*   let ball_radii = [3.0; 4.0; 4.5; 5.0; 5.5; 6.0; 6.5; 6.75; 7.0; 7.25; 7.5] in *)
 let ball_radii = [3.0; 4.0; 4.5; 5.0; 5.5; 6.0; 6.5; 6.75; 7.0; 7.25; 7.5; 7.75; 8.0; 8.25; 8.5; 8.75] in
   Printf.printf "kd\n";
-  let kd_pts = List.mapi (fun i r -> Printf.printf "%f " r; flush stdout; build_kd_pts i r) ball_radii in
+  let kd_pts = tail_mapi (fun i r -> Printf.printf "%f " r; flush stdout; build_kd_pts i r) ball_radii in
 (*
   Printf.printf "naive\n";
-  let naive_pts = List.mapi (fun i r -> Printf.printf "%f\n" r; flush stdout; build_naive_pts i r) ball_radii in
+  let naive_pts = tail_mapi (fun i r -> Printf.printf "%f\n" r; flush stdout; build_naive_pts i r) ball_radii in
 *)
   let graph_settings = { P.default_graph with
 (*
@@ -208,10 +204,10 @@ let run_para_test filename print_output =
   (* let thresholds = [0.49; 0.5; 0.505; 0.51; 0.515; 0.52; 0.53; 0.54; 0.55; 0.6; 0.62; 0.65; 0.7; 0.75; 0.8; 0.9; 1.; 1.1; 1.2; 1.3; 1.4; 1.5; 2.; 3.; 4.; 5.] in *)
   let fp = P.create_ps_file ("test/" ^ filename) in
   Printf.printf "kd\n";
-  let kd_pts = List.mapi (fun i t -> Printf.printf "%f\n" t; flush stdout; build_kd_pts i t) thresholds in
+  let kd_pts = tail_mapi (fun i t -> Printf.printf "%f\n" t; flush stdout; build_kd_pts i t) thresholds in
 (*
   Printf.printf "naive\n";
-  let naive_pts = List.mapi (fun i t -> Printf.printf "%f\n" t; flush stdout; build_naive_pts i t) thresholds in
+  let naive_pts = tail_mapi (fun i t -> Printf.printf "%f\n" t; flush stdout; build_naive_pts i t) thresholds in
 *)
   let graph_settings = { P.default_graph with
 (*
