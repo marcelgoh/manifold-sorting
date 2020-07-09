@@ -7,7 +7,7 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float -> floa
         pos :  float;
         p : float list;
         p' : Space.point;
-        n : int;
+        n : int;   (* index of a node *)
       }
 
     exception Dimension_mismatch of int * int
@@ -23,7 +23,7 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float -> floa
       | Empty -> 0
       | Node (_, left, right)  -> 1 + grid_size left + grid_size right
 
-    let to_list g =
+    let to_list' g =
       let rec tolist_l g l =
         match g with
         | Empty -> l
@@ -31,19 +31,57 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float -> floa
       in
       let cpare (_, m) (_, n) = m - n in
       let pair_list = tolist_l g [] in
-      let sorted = List.stable_sort cpare pair_list in
-      List.map fst sorted
+      List.stable_sort cpare pair_list
 
-    let rec find_in_range g rect =
+    let to_list g = List.rev (List.rev_map fst (to_list' g))
+
+    let rec find_in_range' g rect=
       let in_rect x rect =
         (List.find_opt (fun (x, (min, max)) -> min > x || x > max) (List.combine x rect)) == None
       in
       match g with
       | Empty -> []
       | Node (info, left, right) ->
-         (if in_rect info.p rect then [info.p'] else [])
-         @ (if info.pos >= fst (List.nth rect info.axis) then find_in_range left rect else [])
-         @ (if info.pos <= snd (List.nth rect info.axis) then find_in_range right rect else [])
+         (if in_rect info.p rect then [info] else [])
+         @ (if info.pos >= fst (List.nth rect info.axis) then find_in_range' left rect else [])
+         @ (if info.pos <= snd (List.nth rect info.axis) then find_in_range' right rect else [])
+
+    let find_in_range g rect =
+      List.rev (List.rev_map (fun info -> info.p') (find_in_range' g rect))
+
+    (* builds a graph (V : (int * point) list, E : (int * int) list).
+     *   where (i,j) is in E when the points with indices i and j are within
+     *   threshold of one another
+     *)
+    let to_graph g new_threshold : ((int * Space.point) list) * ((int * int) list) =
+      let point_list : (Space.point * int) list = to_list' g in
+      let vertices = List.rev_map (fun (x,y) -> (y,x)) point_list in
+      let get_neighbours (i,p) edges_so_far =
+        let simpl_p = Space.simpl p in
+        let (p', rect) = F.to_e simpl_p new_threshold in
+        let possible_neighbours = find_in_range' g rect in
+        let rec add_neighbours edge_list u_list =
+          match u_list with
+          | [] -> edge_list
+          | (j,q) :: us ->
+            if Space.dist p q <= new_threshold then
+              add_neighbours ((i, j) :: edge_list) us
+            else
+              add_neighbours edge_list us
+        in
+        let neighbour_pairs =
+          List.rev (List.rev_map (fun info -> (info.n, info.p')) possible_neighbours)
+        in
+        add_neighbours edges_so_far neighbour_pairs
+      in
+      let rec handle_vertices edge_list vertices =
+        match vertices with
+        | [] -> edge_list
+        | v :: vs ->
+              handle_vertices (get_neighbours v edge_list) vs
+      in
+      let edges = handle_vertices [] vertices in
+      (vertices, edges)
 
     let insert g p n p' =
       let rec insertaxis g p newaxis d n p' =

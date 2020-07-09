@@ -2,6 +2,7 @@ module D = DynArray
 module S = Queue
 
 module Naive (Space : Space.Space) = (struct
+  exception Naive_error
   type grid = Space.point D.t
 
   let create_grid () : Space.point D.t = D.create ()
@@ -9,6 +10,8 @@ module Naive (Space : Space.Space) = (struct
   let iter_grid = D.iter
 
   let to_list g = D.to_list g
+
+  let to_graph g threshold = raise Naive_error
 
   let nearest_neighbour g p =
     if D.empty g then
