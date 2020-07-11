@@ -5,7 +5,7 @@ module type Grid = sig
 
   val grid_size : grid -> int
   val to_list : grid -> point list
-  val to_graph : grid -> float -> ((int * point) list * (int * int) list)
+  val to_graph : grid -> float -> ((int * (float * float)) list * (int * int) list)
 
   (* both of these return a grid as well as a list of distance-comparison counts *)
   val fill_space : float -> point -> grid * (int * bool) list

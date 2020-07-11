@@ -19,6 +19,7 @@ let para_to_euclidean (x, y) =
   let l = (sqrt ((a ** 2.) +. (b ** 2.))) /. (2. *. pi) in
   [cos (2. *. pi *. x') *. l; cos (2. *. pi *. y') *. l]
 
+(* THE MODULE ZOO*)
 module N = Naive.Naive(T)
 module K = Kd.Kd(T)(struct let to_e p t = let p' = para_to_euclidean p in (p', List.map (fun x -> (x -. t, x +. t)) p') end)
 module Ke = Kd.Kd(E)(struct let to_e (x, y) t = ([x; y], [(x -. t, x +. t); (y -. t, y +. t)]) end)
@@ -87,6 +88,20 @@ let plot_one_grid newfilename radius scale to_list grid_size idx grid =
   output_string fp (sprintf "30 750 moveto (RADIUS:     %f) show\n" radius);
   output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (grid_size grid));
   P.close_ps_file fp
+(* this has to be a whole separate function for type reasons -- we should
+ *   clean this up later *)
+let plot_one_grid_with_edges newfilename radius threshold scale to_list grid_size idx grid =
+  let settings = { P.default with
+    P.xorigin = 306;
+    P.yorigin = 20;
+  } in
+  let fp = P.create_ps_file newfilename in
+  let adjacency_graph = Kh3.to_graph grid threshold in
+  P.plot_edges fp {settings with scale=scale } adjacency_graph;
+  P.plot_grid fp { settings with scale=scale } (to_list grid);
+  output_string fp (sprintf "30 750 moveto (RADIUS:     %f) show\n" radius);
+  output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (grid_size grid));
+  P.close_ps_file fp
 
 let halfplane_comp_test filename ball_radius =
   let make_triple i (c, added) = (added, (float_of_int (i+1), float_of_int c)) in
@@ -96,7 +111,7 @@ let halfplane_comp_test filename ball_radius =
  *)
 (*   let (_, kd_comp_counts) = Ke.fill_ball (0., 0.) 70.0 0.6 (0.0, 0.0) in *)
   (*   let (_, kd_comp_counts) = K.fill_space 0.4 (27.5, 29.5) in *)
-  let (grid, kd_comp_counts) = Kh.fill_ball (0., 1.) ball_radius 0.5 (0., 1.) in
+(*   let (grid, kd_comp_counts) = Kh.fill_ball (0., 1.) ball_radius 0.5 (0., 1.) in *)
   let (grid, kd_comp_counts) = Kh3.fill_ball (0., 1.) ball_radius 0.5 (0., 1.) in
   let kd_pts = Utils.tail_mapi make_triple kd_comp_counts in
   let added_pts = List.rev_map snd (List.filter fst kd_pts) in
@@ -140,14 +155,14 @@ let run_halfplane_test filename print_output =
     if print_output then (
       let radius_str = Str.global_replace (Str.regexp_string ".") "-" (sprintf "%g" ball_radius) in
       let newfilename = (sprintf "out/%s--%s" filename radius_str) in
-      plot_one_grid (newfilename ^ "kd") ball_radius (300.0 /. (sinh ball_radius))
+      plot_one_grid_with_edges (newfilename ^ "kd") ball_radius 1.0 (300.0 /. (sinh ball_radius))
           (fun g -> List.map (fun p -> H.to_screen p 0.5) (Kh3.to_list g)) Kh3.grid_size idx grid
     );
     (ball_radius, Kh3.grid_size grid, fill_time)
   in
   let fp = P.create_ps_file ("test/" ^ filename) in
-(*   let ball_radii = [3.0; 4.0; 4.5; 5.0; 5.5; 6.0; 6.5; 6.75; 7.0; 7.25; 7.5] in *)
-let ball_radii = [3.0; 4.0; 4.5; 5.0; 5.5; 6.0; 6.5; 6.75; 7.0; 7.25; 7.5; 7.75; 8.0; 8.25; 8.5; 8.75] in
+  let ball_radii = [2.0] in
+(* let ball_radii = [3.0; 4.0; 4.5; 5.0; 5.5; 6.0; 6.5; 6.75; 7.0; 7.25; 7.5; 7.75; 8.0; 8.25; 8.5; 8.75] in *)
   Printf.printf "kd\n";
   let kd_pts = Utils.tail_mapi (fun i r -> Printf.printf "%f " r; flush stdout; build_kd_pts i r) ball_radii in
 (*
@@ -194,11 +209,14 @@ let run_para_test filename print_output =
   let plot_one_grid newfilename threshold to_list grid_size idx grid =
     let thresh_str = Str.global_replace (Str.regexp_string ".") "-" (sprintf "%g" threshold) in
     let fp = P.create_ps_file (sprintf "out/%s--%s" newfilename thresh_str) in
+    let adjacency_graph = K.to_graph grid (2.0 *. threshold) in
+    P.plot_edges fp settings adjacency_graph;
     P.plot_grid fp settings (to_list grid);
     output_string fp (sprintf "30 750 moveto (THRESHOLD: %f) show\n" threshold);
     output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (grid_size grid));
     P.close_ps_file fp
   in
+(*
   let build_naive_pts idx threshold =
     let start_time = Sys.time () in
     let (grid, _) = N.fill_space threshold (26.5, 24.5) in
@@ -206,6 +224,7 @@ let run_para_test filename print_output =
     if print_output then plot_one_grid (filename ^ "naive") threshold (fun g -> List.map (fun p -> T.to_screen p threshold) (N.to_list g)) N.grid_size idx grid;
     (threshold, N.grid_size grid, fill_time)
   in
+*)
   let build_kd_pts idx threshold =
     let start_time = Sys.time () in
     let (grid, _) = K.fill_space threshold (26.5, 24.5) in
@@ -215,7 +234,8 @@ let run_para_test filename print_output =
   in
   let max_in_list_float = List.fold_left max min_float in
   let max_in_list_int = List.fold_left max min_int in
-  let thresholds = [0.27; 0.28; 0.29; 0.30; 0.31; 0.315; 0.32; 0.325; 0.33; 0.34; 0.36; 0.38; 0.40; 0.42; 0.44; 0.46; 0.48; 0.5; 0.52; 0.54; 0.55; 0.57; 0.6; 0.7; 0.8; 1.; 2.; 3.; 4.; 5.] in
+  let thresholds = [3.] in
+(*   let thresholds = [0.27; 0.28; 0.29; 0.30; 0.31; 0.315; 0.32; 0.325; 0.33; 0.34; 0.36; 0.38; 0.40; 0.42; 0.44; 0.46; 0.48; 0.5; 0.52; 0.54; 0.55; 0.57; 0.6; 0.7; 0.8; 1.; 2.; 3.; 4.; 5.] in *)
 (* let thresholds = [0.5; 0.515; 0.52; 0.53; 0.54; 0.55; 0.6; 0.62; 0.65; 0.7; 0.75; 0.8; 0.9; 1.; 1.1; 1.2; 1.3; 1.4; 1.5; 2.; 3.; 4.; 5.] in *)
   (* let thresholds = [0.49; 0.5; 0.505; 0.51; 0.515; 0.52; 0.53; 0.54; 0.55; 0.6; 0.62; 0.65; 0.7; 0.75; 0.8; 0.9; 1.; 1.1; 1.2; 1.3; 1.4; 1.5; 2.; 3.; 4.; 5.] in *)
   let fp = P.create_ps_file ("test/" ^ filename) in

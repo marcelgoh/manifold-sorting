@@ -90,6 +90,10 @@ let show_float fp flt = output_string fp (sprintf "(%g ) show\n" flt)
 let show_int fp n = output_string fp (sprintf "(%d ) show\n" n)
 let show_str fp s = output_string fp (sprintf "(%s ) show\n" s)
 let moveto fp x y = output_string fp (sprintf "%d %d moveto " x y)
+(* draws a line segment *)
+let draw_line fp x1 y1 x2 y2 =
+  output_string fp (sprintf "newpath %f %f moveto " x1 y1);
+  output_string fp (sprintf "%f %f lineto stroke\n" x2 y2)
 let dot fp x_f y_f = output_string fp (sprintf "newpath %f %f dot\n" x_f y_f)
 
 let set_colour fp (r, g, b) = output_string fp (sprintf "%f %f %f setrgbcolor\n" r g b)
@@ -184,11 +188,26 @@ let scatterplot fp gstgs points =
   set_colour fp black
 
 let draw_point fp stgs ((x, y), r, (x', y')) =
+  Printf.printf "Drawing point: %f %f\n" x' y';
   output_string fp (sprintf "%f %f dot\n" (x' *. stgs.scale) (y' *. stgs.scale));
   if r <> 0.0 then (
     let f a = a *. stgs.scale in
     output_string fp (sprintf "%f %f %f circle\n" (f x) (f y) (f r))
   )
+
+let plot_edges fp stgs (vertices, edges) =
+  let point_arr = Array.make (List.length vertices) (0.0, 0.0) in
+  List.iter (fun (i, (x,y)) ->
+    Printf.printf "Point: %f %f\n" x y;
+    Array.set point_arr i (x,y)) vertices;
+  let draw_edge (i, j) =
+    let (x1, y1) = point_arr.(i) in
+    let (x2, y2) = point_arr.(j) in
+    let fx x = (x *. stgs.scale) +. (float_of_int stgs.xorigin) in
+    let fy y = (y *. stgs.scale) +. (float_of_int stgs.yorigin) in
+    draw_line fp (fx x1) (fy y1) (fx x2) (fy y2)
+  in
+  List.iter draw_edge edges
 
 let plot_grid fp stgs grid_list =
   let (r1, g1, b1) = stgs.colour1 in

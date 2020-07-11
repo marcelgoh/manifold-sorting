@@ -9,7 +9,7 @@ module H = Halfplane.Halfplane
 module N = Naive.Naive(H)
 
 let _ =
-  (* T.run_para_test "kdonly1" true; *)
+(*   T.run_para_test "kdonly1" true *)
 
   (* let fp = P.create_ps_file "halfplane" in
    * let rec range n = if n < 1. then [] else range (n -. 1.) @ [n -. 1.] in
