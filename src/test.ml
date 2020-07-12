@@ -96,7 +96,10 @@ let plot_one_grid_with_edges newfilename radius threshold scale to_list grid_siz
     P.yorigin = 20;
   } in
   let fp = P.create_ps_file newfilename in
+  let start_time = Sys.time () in
   let adjacency_graph = Kh3.to_graph grid threshold in
+  let fill_time = Sys.time () -. start_time in
+  Printf.printf "%f\n" fill_time;
   P.plot_edges fp {settings with scale=scale } adjacency_graph;
   P.plot_grid fp { settings with scale=scale } (to_list grid);
   output_string fp (sprintf "30 750 moveto (RADIUS:     %f) show\n" radius);
@@ -161,8 +164,8 @@ let run_halfplane_test filename print_output =
     (ball_radius, Kh3.grid_size grid, fill_time)
   in
   let fp = P.create_ps_file ("test/" ^ filename) in
-  let ball_radii = [2.0] in
-(* let ball_radii = [3.0; 4.0; 4.5; 5.0; 5.5; 6.0; 6.5; 6.75; 7.0; 7.25; 7.5; 7.75; 8.0; 8.25; 8.5; 8.75] in *)
+  (* let ball_radii = [2.0] in *)
+  let ball_radii = [3.0; 4.0; 4.5; 5.0; 5.5; 6.0; 6.5; 6.75; 7.0; 7.25; 7.5; 7.75; 8.0; 8.25; 8.5; 8.75] in
   Printf.printf "kd\n";
   let kd_pts = Utils.tail_mapi (fun i r -> Printf.printf "%f " r; flush stdout; build_kd_pts i r) ball_radii in
 (*
@@ -209,7 +212,10 @@ let run_para_test filename print_output =
   let plot_one_grid newfilename threshold to_list grid_size idx grid =
     let thresh_str = Str.global_replace (Str.regexp_string ".") "-" (sprintf "%g" threshold) in
     let fp = P.create_ps_file (sprintf "out/%s--%s" newfilename thresh_str) in
+    let start_time = Sys.time () in
     let adjacency_graph = K.to_graph grid (2.0 *. threshold) in
+    let fill_time = Sys.time () -. start_time in
+    Printf.printf "%f\n" fill_time;
     P.plot_edges fp settings adjacency_graph;
     P.plot_grid fp settings (to_list grid);
     output_string fp (sprintf "30 750 moveto (THRESHOLD: %f) show\n" threshold);

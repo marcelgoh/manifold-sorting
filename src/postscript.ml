@@ -188,7 +188,6 @@ let scatterplot fp gstgs points =
   set_colour fp black
 
 let draw_point fp stgs ((x, y), r, (x', y')) =
-  Printf.printf "Drawing point: %f %f\n" x' y';
   output_string fp (sprintf "%f %f dot\n" (x' *. stgs.scale) (y' *. stgs.scale));
   if r <> 0.0 then (
     let f a = a *. stgs.scale in
@@ -198,7 +197,6 @@ let draw_point fp stgs ((x, y), r, (x', y')) =
 let plot_edges fp stgs (vertices, edges) =
   let point_arr = Array.make (List.length vertices) (0.0, 0.0) in
   List.iter (fun (i, (x,y)) ->
-    Printf.printf "Point: %f %f\n" x y;
     Array.set point_arr i (x,y)) vertices;
   let draw_edge (i, j) =
     let (x1, y1) = point_arr.(i) in
