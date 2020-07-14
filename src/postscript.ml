@@ -194,17 +194,22 @@ let draw_point fp stgs ((x, y), r, (x', y')) =
     output_string fp (sprintf "%f %f %f circle\n" (f x) (f y) (f r))
   )
 
+let draw_line_segment fp stgs (x1, y1) (x2, y2) =
+  if x1 > 1000. || y1 > 1000. || x2 > 1000. || y2 > 1000.
+  || x1 < (-1000.) || y1 < (-1000.) || x2 < (-1000.) || y2 < (-1000.)
+  then
+    ()
+  else (
+    let fx x = (x *. stgs.scale) +. (float_of_int stgs.xorigin) in
+    let fy y = (y *. stgs.scale) +. (float_of_int stgs.yorigin) in
+    draw_line fp (fx x1) (fy y1) (fx x2) (fy y2)
+  )
+
 let plot_edges fp stgs (vertices, edges) =
   let point_arr = Array.make (List.length vertices) (0.0, 0.0) in
   List.iter (fun (i, (x,y)) ->
     Array.set point_arr i (x,y)) vertices;
-  let draw_edge (i, j) =
-    let (x1, y1) = point_arr.(i) in
-    let (x2, y2) = point_arr.(j) in
-    let fx x = (x *. stgs.scale) +. (float_of_int stgs.xorigin) in
-    let fy y = (y *. stgs.scale) +. (float_of_int stgs.yorigin) in
-    draw_line fp (fx x1) (fy y1) (fx x2) (fy y2)
-  in
+  let draw_edge (i, j) = draw_line_segment fp stgs point_arr.(i) point_arr.(j) in
   List.iter draw_edge edges
 
 let plot_grid fp stgs grid_list =

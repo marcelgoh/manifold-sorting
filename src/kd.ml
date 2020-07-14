@@ -53,11 +53,11 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float -> floa
      *   where (i,j) is in E when the points with indices i and j are within
      *   threshold of one another
      *)
-    let to_graph g new_threshold : ((int * (float * float)) list) * ((int * int) list) =
+    let to_graph g new_threshold : ((int * Space.point) list) * ((int * int) list) =
       let point_list : (Space.point * int) list = to_list' g in
       let vertices = List.rev_map (fun (x,y) -> (y, x)) point_list in
-      let f x = let (_, _, c) = Space.to_screen x (new_threshold /. 2.) in c in
-      let screen_points = List.rev_map (fun (x,y) -> (y, f x)) point_list in
+(*       let f x = let (_, _, c) = Space.to_screen x (new_threshold /. 2.) in c in *)
+(*       let screen_points = List.rev_map (fun (x,y) -> (y, f x)) point_list in *)
       let get_neighbours (i,p) edges_so_far =
         let simpl_p = Space.simpl p in
         let (p', rect) = F.to_e simpl_p new_threshold in
@@ -83,7 +83,7 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float -> floa
               handle_vertices (get_neighbours v edge_list) vs
       in
       let edges = handle_vertices [] vertices in
-      (screen_points, edges)
+      (vertices, edges)
 
     let insert g p n p' =
       let rec insertaxis g p newaxis d n p' =

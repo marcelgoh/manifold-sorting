@@ -9,7 +9,7 @@ module H = Halfplane.Halfplane
 module N = Naive.Naive(H)
 
 let _ =
-  (* T.run_para_test "kdonly1" true *)
+(*   T.run_para_test "kdonly1" true *)
 
   (* let fp = P.create_ps_file "halfplane" in
    * let rec range n = if n < 1. then [] else range (n -. 1.) @ [n -. 1.] in
@@ -33,5 +33,6 @@ let _ =
    *  * P.plot_grid fp { P.default with scale=15. } (List.map (fun p -> H.to_screen p 0.5) (K.to_list grid));
    *  * P.plot_grid fp { P.default with scale=15. } [H.to_screen (0., 1.) 0.5]; *\)
    * P.close_ps_file fp; *)
-  Test.run_halfplane_test "kdonlyhalfplane" true
+(*   Test.run_halfplane_test "kdonlyhalfplane" true *)
+  Test.fill_euclidean_ball "euclideanball" 0.5 true
   (* Test.halfplane_comp_test "hi" 9.0 *)

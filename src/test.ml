@@ -72,7 +72,7 @@ module Kh3 = Kd.Kd(H)(struct let to_e (x, y) threshold =
                                              )]
                                  in
                                  [r; cos theta; sin theta], rect end)
-module V = Voronoi.Voronoi(H)(Kh3)
+module Ve = Voronoi.Voronoi_eucl(Ke)
 
 let first_triple (a, _, _) = a
 let second_triple (_, b, _) = b
@@ -89,6 +89,7 @@ let plot_one_grid newfilename radius scale to_list grid_size idx grid =
   output_string fp (sprintf "30 750 moveto (RADIUS:     %f) show\n" radius);
   output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (grid_size grid));
   P.close_ps_file fp
+
 (* this has to be a whole separate function for type reasons -- we should
  *   clean this up later *)
 let plot_one_grid_with_edges newfilename radius threshold scale to_list grid_size idx grid =
@@ -98,13 +99,33 @@ let plot_one_grid_with_edges newfilename radius threshold scale to_list grid_siz
   } in
   let fp = P.create_ps_file newfilename in
   let start_time = Sys.time () in
-  let adjacency_graph = Kh3.to_graph grid threshold in
+  let (vertices, edges) = Kh3.to_graph grid threshold in
+  let f (i, p) = (i, third_triple (H.to_screen p threshold)) in
+  let vertices' = List.map f vertices in
+  let adjacency_graph = (vertices', edges) in
   let fill_time = Sys.time () -. start_time in
   Printf.printf "%f\n" fill_time;
   P.plot_edges fp {settings with scale=scale } adjacency_graph;
   P.plot_grid fp { settings with scale=scale } (to_list grid);
   output_string fp (sprintf "30 750 moveto (RADIUS:     %f) show\n" radius);
   output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (grid_size grid));
+  P.close_ps_file fp
+
+let plot_one_grid_with_voronoi newfilename radius guarantee_threshold scale to_list grid_size idx grid =
+  let settings = { P.default with
+    P.xorigin = 306;
+    P.yorigin = 396;
+  } in
+  let fp = P.create_ps_file newfilename in
+  output_string fp (sprintf "30 750 moveto (RADIUS:     %f) show\n" radius);
+  output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (grid_size grid));
+  let line_segments = Ve.build grid guarantee_threshold in
+  List.iter (fun (i,j) ->
+    let (ix, iy) = i in
+    let (jx, jy) = j in
+    Printf.printf "%f %f %f %f\n" ix iy jx jy;
+    P.draw_line_segment fp settings i j) line_segments;
+  P.plot_grid fp { settings with scale=scale } (to_list grid);
   P.close_ps_file fp
 
 let halfplane_comp_test filename ball_radius =
@@ -214,7 +235,10 @@ let run_para_test filename print_output =
     let thresh_str = Str.global_replace (Str.regexp_string ".") "-" (sprintf "%g" threshold) in
     let fp = P.create_ps_file (sprintf "out/%s--%s" newfilename thresh_str) in
     let start_time = Sys.time () in
-    let adjacency_graph = K.to_graph grid (2.0 *. threshold) in
+    let (vertices, edges) : ((int * T.point) list * (int * int) list) = K.to_graph grid (2.0 *. threshold) in
+    let f (i, p) = (i, third_triple (H.to_screen p threshold)) in
+    let vertices' = List.map f vertices in
+    let adjacency_graph = (vertices', edges) in
     let fill_time = Sys.time () -. start_time in
     Printf.printf "%f\n" fill_time;
     P.plot_edges fp settings adjacency_graph;
@@ -261,24 +285,34 @@ let run_para_test filename print_output =
     P.ylabeloffsets = 22;
     P.write_thresholds = true;
   } in
-  let print_info () kd_pts naive_pts =
-    P.moveto fp 30 750;
-    P.show_str fp "THRESHOLD: ";
-    List.iter (P.show_float fp) (List.map first_triple kd_pts);
-    P.moveto fp 30 735;
-    P.show_str fp "KD_PTS:    ";
-    List.iter (P.show_int fp) (List.map second_triple kd_pts);
-    P.moveto fp 30 720;
-    P.show_str fp "NAIVE_PTS: ";
-    List.iter (P.show_int fp) (List.map second_triple naive_pts);
-    P.moveto fp 30 705;
-    P.show_str fp "KD_TIME:   ";
-    List.iter (P.show_float fp) (List.map third_triple kd_pts);
-    P.moveto fp 30 690;
-    P.show_str fp "NAIVE_TIME:";
-    List.iter (P.show_float fp) (List.map third_triple naive_pts);
-  in
 (*   P.draw_graph fp graph_settings [(P.green, kd_pts); (P.red, naive_pts)]; *)
+  P.draw_graph fp graph_settings [(P.green, kd_pts)] "NO. OF POINTS" "TIME (s)";
+  P.close_ps_file fp
+
+let fill_euclidean_ball filename threshold print_output =
+  let build_kd_pts idx ball_radius =
+    let start_time = Sys.time () in
+    let ((grid : Ke.grid), _) = Ke.fill_ball (0.0, 1.0) ball_radius threshold (0.0, 1.0) in
+    let fill_time = Sys.time () -. start_time in
+    Printf.printf "\t%d\t%f\t " (Ke.grid_size grid) fill_time;
+    if print_output then (
+      let radius_str = Str.global_replace (Str.regexp_string ".") "-" (sprintf "%g" ball_radius) in
+      let newfilename = (sprintf "out/%s--%s" filename radius_str) in
+      plot_one_grid_with_voronoi (newfilename ^ "kd") ball_radius (threshold *. 2.0) (250.0 /. ball_radius)
+          (fun (g : Ke.grid) -> List.map (fun p -> E.to_screen p threshold) (Ke.to_list g)) Ke.grid_size idx grid
+    );
+    (ball_radius, Ke.grid_size grid, fill_time)
+  in
+  let fp = P.create_ps_file ("test/" ^ filename) in
+  let ball_radii = [4.0] in
+  Printf.printf "kd\n";
+  let kd_pts = Utils.tail_mapi (fun i r -> Printf.printf "%f " r; flush stdout; build_kd_pts i r) ball_radii in
+  let graph_settings = { P.default_graph with
+    P.xmax = float_of_int (max_in_list_int (List.map second_triple kd_pts));
+    P.ymax = max_in_list_float (List.map third_triple kd_pts);
+    P.ylabeloffsets = 22;
+    P.write_thresholds = true;
+  } in
   P.draw_graph fp graph_settings [(P.green, kd_pts)] "NO. OF POINTS" "TIME (s)";
   P.close_ps_file fp
 
