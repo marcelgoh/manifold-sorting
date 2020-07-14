@@ -72,6 +72,7 @@ module Kh3 = Kd.Kd(H)(struct let to_e (x, y) threshold =
                                              )]
                                  in
                                  [r; cos theta; sin theta], rect end)
+module V = Voronoi.Voronoi(H)(Kh3)
 
 let first_triple (a, _, _) = a
 let second_triple (_, b, _) = b
@@ -154,7 +155,7 @@ let run_halfplane_test filename print_output =
     let start_time = Sys.time () in
     let (grid, _) = Kh3.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
     let fill_time = Sys.time () -. start_time in
-    Printf.printf "%d %f\n" (Kh3.grid_size grid) fill_time;
+    Printf.printf "\t%d\t%f\t " (Kh3.grid_size grid) fill_time;
     if print_output then (
       let radius_str = Str.global_replace (Str.regexp_string ".") "-" (sprintf "%g" ball_radius) in
       let newfilename = (sprintf "out/%s--%s" filename radius_str) in
@@ -164,8 +165,8 @@ let run_halfplane_test filename print_output =
     (ball_radius, Kh3.grid_size grid, fill_time)
   in
   let fp = P.create_ps_file ("test/" ^ filename) in
-  (* let ball_radii = [2.0] in *)
-  let ball_radii = [3.0; 4.0; 4.5; 5.0; 5.5; 6.0; 6.5; 6.75; 7.0; 7.25; 7.5; 7.75; 8.0; 8.25; 8.5; 8.75] in
+  let ball_radii = [2.5] in
+(*   let ball_radii = [3.0; 4.0; 4.5; 5.0; 5.5; 6.0; 6.5; 6.75; 7.0; 7.25; 7.5; 7.75; 8.0; 8.25; 8.5; 8.75] in *)
   Printf.printf "kd\n";
   let kd_pts = Utils.tail_mapi (fun i r -> Printf.printf "%f " r; flush stdout; build_kd_pts i r) ball_radii in
 (*
@@ -245,7 +246,6 @@ let run_para_test filename print_output =
 (* let thresholds = [0.5; 0.515; 0.52; 0.53; 0.54; 0.55; 0.6; 0.62; 0.65; 0.7; 0.75; 0.8; 0.9; 1.; 1.1; 1.2; 1.3; 1.4; 1.5; 2.; 3.; 4.; 5.] in *)
   (* let thresholds = [0.49; 0.5; 0.505; 0.51; 0.515; 0.52; 0.53; 0.54; 0.55; 0.6; 0.62; 0.65; 0.7; 0.75; 0.8; 0.9; 1.; 1.1; 1.2; 1.3; 1.4; 1.5; 2.; 3.; 4.; 5.] in *)
   let fp = P.create_ps_file ("test/" ^ filename) in
-  Printf.printf "kd\n";
   let kd_pts = Utils.tail_mapi (fun i t -> Printf.printf "%f\n" t; flush stdout; build_kd_pts i t) thresholds in
 (*
   Printf.printf "naive\n";
