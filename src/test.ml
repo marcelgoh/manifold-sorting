@@ -115,6 +115,7 @@ let plot_one_grid_with_voronoi newfilename radius guarantee_threshold scale to_l
   let settings = { P.default with
     P.xorigin = 306;
     P.yorigin = 396;
+    scale = scale;
   } in
   let fp = P.create_ps_file newfilename in
   output_string fp (sprintf "30 750 moveto (RADIUS:     %f) show\n" radius);

@@ -55,7 +55,7 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float -> floa
      *)
     let to_graph g new_threshold : ((int * Space.point) list) * ((int * int) list) =
       let point_list : (Space.point * int) list = to_list' g in
-      let vertices = List.rev_map (fun (x,y) -> (y, x)) point_list in
+      let vertices = List.rev (List.rev_map (fun (x,y) -> (y, x)) point_list) in
 (*       let f x = let (_, _, c) = Space.to_screen x (new_threshold /. 2.) in c in *)
 (*       let screen_points = List.rev_map (fun (x,y) -> (y, f x)) point_list in *)
       let get_neighbours (i,p) edges_so_far =
@@ -66,7 +66,7 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float -> floa
           match u_list with
           | [] -> edge_list
           | (j,q) :: us ->
-            if Space.dist p q <= new_threshold then
+            if Space.dist p q <= new_threshold && i <> j then
               add_neighbours ((i, j) :: edge_list) us
             else
               add_neighbours edge_list us
