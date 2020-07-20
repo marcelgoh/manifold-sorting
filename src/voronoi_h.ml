@@ -1,10 +1,10 @@
 
 
-module Voronoi_eucl (Grid : Grid.Grid with type point := Euclidean.Euclidean.point) = struct
-  type point = Euclidean.Euclidean.point
+module Voronoi_h (Grid : Grid.Grid with type point := Halfplane.Halfplane.point) = struct
+  type point = Halfplane.Halfplane.point
   type line_segment = point * point
 
-  let dist = Euclidean.Euclidean.dist
+  let dist = Halfplane.Halfplane.dist
 
   let all_pairs x_list =
     let rec helper acc x_list =
@@ -21,7 +21,8 @@ module Voronoi_eucl (Grid : Grid.Grid with type point := Euclidean.Euclidean.poi
     let i_d = 1.0 /. (2.0 *. (ax *. (by -. cy) +. bx *. (cy -. ay) +. cx *. (ay -. by))) in
     let ux = i_d *. (a' *. (by -. cy) +. b' *. (cy -. ay) +. c' *. (ay -. by)) in
     let uy = i_d *. (a' *. (cx -. bx) +. b' *. (ax -. cx) +. c' *. (bx -. ax)) in
-    (ux, uy)
+    let r = dist (ax, ay) (ux, uy) in
+    (ux, uy *. cosh r)
 
   let get_vertices grid guarantee_radius : (int * int * int) list =
     let (nodes, edges) = Grid.to_graph grid (2.0 *. guarantee_radius) in
@@ -56,7 +57,7 @@ module Voronoi_eucl (Grid : Grid.Grid with type point := Euclidean.Euclidean.poi
     in
     circumcentres
 
-  let covering_radius grid guarantee =
+  let covering_radius grid guarantee r =
     let pts = Array.of_list (Grid.to_list grid) in
     let vertices = List.map (fun (a, b, c) -> circumcentre pts.(a) pts.(b) pts.(c)) (get_vertices grid guarantee) in
     let get_dist p =
@@ -64,7 +65,7 @@ module Voronoi_eucl (Grid : Grid.Grid with type point := Euclidean.Euclidean.poi
       let dists = List.rev_map (dist p) neighbors in
       List.fold_left min max_float dists
     in
-    let dists = List.map get_dist vertices in
+    let dists = List.map get_dist (List.filter (fun v -> dist v (0., 1.) < r) vertices) in
     List.fold_left max min_float dists
 
 end

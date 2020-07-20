@@ -12,6 +12,7 @@ module Naive (Space : Space.Space) = (struct
   let to_list g = D.to_list g
 
   let to_graph g threshold = raise Naive_error
+  let find_in_ball g p r = raise Naive_error
 
   let nearest_neighbour g p =
     if D.empty g then

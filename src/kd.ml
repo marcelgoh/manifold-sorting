@@ -49,6 +49,10 @@ module Kd (Space : Space.Space) (F : sig val to_e : Space.point -> float -> floa
     let find_in_range g rect =
       List.rev (List.rev_map (fun info -> info.p') (find_in_range' g rect))
 
+    let find_in_ball g p r =
+      let _, rect = F.to_e p r in
+      find_in_range g rect
+
     (* builds a graph (V : (int * point) list, E : (int * int) list).
      *   where (i,j) is in E when the points with indices i and j are within
      *   threshold of one another
