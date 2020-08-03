@@ -27,7 +27,7 @@ let torus u v =
          ] in
        let dists = List.map (fun c -> e_dist c p2) candidates in  (* nine distances *)
        let min a b = if a < b then a else b in
-       List.fold_left min max_float dists  (* find minimum of distances *)
+       (List.fold_left min max_float dists, true)  (* find minimum of distances *)
      (* get the representative within the parallelogram *)
      let simpl p =
        let det = xu *. yv -. xv *. yu in

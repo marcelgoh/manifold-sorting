@@ -4,7 +4,7 @@ module Voronoi_h (Grid : Grid.Grid with type point := Halfplane.Halfplane.point)
   type point = Halfplane.Halfplane.point
   type line_segment = point * point
 
-  let dist = Halfplane.Halfplane.dist
+  let dist p q = fst (Halfplane.Halfplane.dist p q)
 
   let all_pairs x_list =
     let rec helper acc x_list =

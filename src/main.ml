@@ -34,12 +34,6 @@ let _ =
    *  * P.plot_grid fp { P.default with scale=15. } (List.map (fun p -> H.to_screen p 0.5) (K.to_list grid));
    *  * P.plot_grid fp { P.default with scale=15. } [H.to_screen (0., 1.) 0.5]; *\)
    * P.close_ps_file fp; *)
-(*   Test.run_halfplane_test "kdonlyhalfplane" true *)
+  Test.run_halfplane_gamma_test "halfplanegamma" true
 (*   Test.fill_euclidean_ball "euclideanball" 0.5 true; *)
   (* Test.halfplane_comp_test "hi" 9.0 *)
-  let h1 = H.dist (1.0, 1.0) (1.0, 2.0) in
-  let hs1 = Hs.dist (1.0, 1.0) (1.0, 2.0) in
-  let h2 = H.dist (1.0, 1.0) (3.0, 1.0) in
-  let hs2 = Hs.dist (1.0, 1.0) (3.0, 1.0) in
-  printf "Halfplane distance: %f\tQuadratic-form distance: %f\tRatio: %f\n" h1 hs1 (hs1 /. h1);
-  printf "Halfplane distance: %f\tQuadratic-form distance: %f\tRatio: %f\n" h2 hs2 (hs2 /. h2)

@@ -7,7 +7,7 @@ module Halfplane : Space.Space with type point = float * float = struct
     let a = (x2 -. x1) ** 2. in
     let b = (y2 -. y1) ** 2. in
     let c = (y2 +. y1) ** 2. in
-    2. *. log ( ((sqrt (a +. b)) +. (sqrt (a +. c))) /. (2. *. sqrt (y1 *. y2)) )
+    (2. *. log ( ((sqrt (a +. b)) +. (sqrt (a +. c))) /. (2. *. sqrt (y1 *. y2)) ), true)
 
   let simpl p = p
 

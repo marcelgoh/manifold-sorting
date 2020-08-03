@@ -4,7 +4,7 @@ module Voronoi_eucl (Grid : Grid.Grid with type point := Euclidean.Euclidean.poi
   type point = Euclidean.Euclidean.point
   type line_segment = point * point
 
-  let dist = Euclidean.Euclidean.dist
+  let dist p q = fst (Euclidean.Euclidean.dist p q)
 
   let all_pairs x_list =
     let rec helper acc x_list =

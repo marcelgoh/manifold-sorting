@@ -7,6 +7,7 @@ let u = (50.0, -1.0)
 let v = (5.0, 60.0)
 module T = (val Torus.torus u v : Space.Space with type point = float * float)
 module H = Halfplane.Halfplane
+module Hs = Halfplane_sl2z.Halfplane_sl2z
 module E = Euclidean.Euclidean
 
 let pi = (acos (-.1.))
@@ -24,7 +25,7 @@ module N = Naive.Naive(T)
 module K = Kd.Kd(T)(struct let to_e p t = let p' = para_to_euclidean p in (p', List.map (fun x -> (x -. t, x +. t)) p') end)
 module Ke = Kd.Kd(E)(struct let to_e (x, y) t = ([x; y], [(x -. t, x +. t); (y -. t, y +. t)]) end)
 module Ke2 = Kd.Kd(E)(struct let to_e (x, y) t =
-                              let r = E.dist (x, y) (0., 1.) in
+                              let r = fst (E.dist (x, y) (0., 1.)) in
                               let theta = atan2 y x in
                               let rect = [(r -. t, r +. t);
                                           (if r <= t then (-4., 4.) else
@@ -35,8 +36,9 @@ module Ke2 = Kd.Kd(E)(struct let to_e (x, y) t =
                               ([r; theta], rect) end)
 
 module Nh = Naive.Naive(H)
+module Nhs = Naive.Naive(Hs)
 module Kh = Kd.Kd(H)(struct let to_e (x, y) threshold =
-                                 let r = H.dist (x, y) (0., 1.) in
+                                 let r = fst (H.dist (x, y) (0., 1.)) in
                                  let theta = atan2 (x ** 2. +. y ** 2. -. 1.) (2. *. x) in
                                  let rect = [(r -. threshold, r +. threshold);
                                              (if r <= threshold then (-4., 4.) else
@@ -46,7 +48,7 @@ module Kh = Kd.Kd(H)(struct let to_e (x, y) threshold =
                                  in
                                  [r; cos theta], rect end)
 module Kh2 = Kd.Kd(H)(struct let to_e (x, y) threshold =
-                                 let r = H.dist (x, y) (0., 1.) in
+                                 let r = fst (H.dist (x, y) (0., 1.)) in
                                  let theta = atan2 (x ** 2. +. y ** 2. -. 1.) (2. *. x) in
                                  let rect = [(r -. threshold, r +. threshold);
                                              (if r <= threshold then (-4., 4.) else
@@ -57,7 +59,7 @@ module Kh2 = Kd.Kd(H)(struct let to_e (x, y) threshold =
                                  in
                                  [r; cos theta], rect end)
 module Kh3 = Kd.Kd(H)(struct let to_e (x, y) threshold =
-                                 let r = H.dist (x, y) (0., 1.) in
+                                 let r = fst (H.dist (x, y) (0., 1.)) in
                                  let theta = atan2 (x ** 2. +. y ** 2. -. 1.) (2. *. x) in
                                  let rect = [(r -. threshold, r +. threshold);
                                              (if r <= threshold then (-4., 4.) else
@@ -320,3 +322,16 @@ let fill_euclidean_ball filename threshold print_output =
   P.draw_graph fp graph_settings [(P.green, kd_pts)] "NO. OF POINTS" "TIME (s)";
   P.close_ps_file fp
 
+let run_halfplane_gamma_test filename print_output =
+  let to_list = (fun g -> List.map (fun p -> H.to_screen p 0.5) (Nhs.to_list g)) in
+  let start_time = Sys.time () in
+  let (grid, _) = Nhs.fill_ball (0.0, 1.0) max_float 0.5 (0.0, 1.0) in
+  let fill_time = Sys.time () -. start_time in
+  let settings = { P.default with
+    P.xorigin = 306;
+    P.yorigin = 20;
+  } in
+  let fp = P.create_ps_file ("out/" ^ filename) in
+  P.plot_grid fp { settings with scale= 300.0/.(sinh 2.0) } (to_list grid);
+  output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (Nhs.grid_size grid));
+  P.close_ps_file fp;
