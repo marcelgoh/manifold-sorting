@@ -33,15 +33,9 @@ module Halfplane_sl2z : Space.Space with type point = float * float = struct
     (sqrt ((d -. y) *. y), y)
 
   (* finds unique matrix that takes basis b1, b2 to basis v1, v2 *)
-  (* =========== PUT IN EXPLICIT FORMULA ============ *)
   let find_matrix (b1x, b1y) (b2x, b2y) (v1x, v1y) (v2x, v2y) =
-    let a = [| [| b1x; b1y; 0.0; 0.0 |];
-               [| 0.0; 0.0; b1x; b1y |];
-               [| b2x; b2y; 0.0; 0.0 |];
-               [| 0.0; 0.0; b2x; b2y |] |] in
-    let v = [| v1x; v1y; v2x; v2y |] in
-    let sol = solve a v in
-    (sol.(0), sol.(1), sol.(2), sol.(3))
+    let det = (b1x *. b2y) -. (b2x *. b1y) in
+    ((b2y*.v1x)-.(b2x*.v1y), (b1x*.v1y)-.(b1y*.v1x), (b2y*.v2x)-.(b2x*.v2y), (b1x*.v2y)-.(b1y*.v2x))
 
   let dist (x1, y1) (x2, y2) =
     let q1 = quad_of_point (x1, y1) in
