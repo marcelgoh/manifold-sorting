@@ -5,7 +5,6 @@ module Halfplane_sl2z : Space.Space with type point = float * float = struct
   type quad = float * float * float * float   (* matrix entries a b c d *)
   type gamma = float * float * float * float  (* group element gamma in SL_2(ZZ) *)
 
-
   (* matrix acts on point by mobius transformation *)
   let mobius (a, b, c, d) (x,y) =
     let module C = Complex in
@@ -62,10 +61,10 @@ module Halfplane_sl2z : Space.Space with type point = float * float = struct
   let find_matrix (b1x, b1y) (b2x, b2y) (v1x, v1y) (v2x, v2y) =
     let det = (b1x *. b2y) -. (b2x *. b1y) in
     let f x = x /. det in
-    let a = f ((b2y*.v1x)-.(b2x*.v1y)) in
-    let b = f ((b2y*.v2x)-.(b2x*.v2y)) in
-    let c = f ((b1x*.v1y)-.(b1y*.v1x)) in
-    let d = f ((b1x*.v2y)-.(b1y*.v2x)) in
+    let a = f ((b2y*.v1x)-.(b1y*.v2x)) in
+    let b = f ((b1x*.v2x)-.(b2x*.v1x)) in
+    let c = f ((b2y*.v1y)-.(b1y*.v2y)) in
+    let d = f ((b1x*.v2y)-.(b2x*.v1y)) in
 (*
     Printf.printf "(%.1f %.1f %.1f %.1f) takes (%.1f %.1f) to (%.1f %.1f) and (%.1f %.1f) to (%.1f %.1f).\n"
     a b c d b1x b1y v1x v1y b2x b2y v2x v2y;
@@ -77,8 +76,8 @@ module Halfplane_sl2z : Space.Space with type point = float * float = struct
     let q1 = quad_of_point (x1, y1) in
     let q2 = quad_of_point (x2, y2) in
     let (q1a, q1b, q1c, q1d) = q1 in let (q2a, q2b, q2c, q2d) = q2 in
-(*     Printf.printf "Quadratic form for point (%.1f, %.1f) is %fx^2 + %fxy + %fy^2.\n" x1 y1 q1a (q1b +. q1c) q1d; *)
-(*     Printf.printf "Quadratic form for point (%.1f, %.1f) is %fx^2 + %fxy + %fy^2.\n" x2 y2 q2a (q2b +. q2c) q2d; *)
+    Printf.printf "Quadratic form for point (%.1f, %.1f) is %fx^2 + %fxy + %fy^2.\n" x1 y1 q1a (q1b +. q1c) q1d;
+    Printf.printf "Quadratic form for point (%.1f, %.1f) is %fx^2 + %fxy + %fy^2.\n" x2 y2 q2a (q2b +. q2c) q2d;
     let start_b1 = (1.0, 0.0) in
     let start_b2 = (0.0, 1.0) in
     (* === here we would reduce b1, b2 with respect to q2 via LLL === *)
@@ -94,7 +93,7 @@ module Halfplane_sl2z : Space.Space with type point = float * float = struct
       let small_ee = exp (-.1.0) in
       (ee*.q1b1, ee*.q1b2, small_ee*.q1b1, small_ee*.q1b2)
     in
-(*     Printf.printf "rad1: %f, rad2: %f, small_rad1: %f, small_rad2: %f\n" rad1 rad2 small_rad1 small_rad2; *)
+    Printf.printf "rad1: %f, rad2: %f, small_rad1: %f, small_rad2: %f\n" rad1 rad2 small_rad1 small_rad2;
     let (qa, qb, qb', qc) = q2 in
     if qb <> qb' then raise (Sl2z_error "Quadratic form is not symmetric.");
     (* coefficients of quadratic form *)
@@ -108,7 +107,7 @@ module Halfplane_sl2z : Space.Space with type point = float * float = struct
     let max_m = truncate (sqrt (max_rad /. (qa' -. (qb'2/.(4.0*.qc'))))) in
     let max_n = truncate (sqrt (max_rad /. (qc' -. (qb'2/.(4.0*.qa'))))) in
     let rectangle = product (range (-max_m) max_m) (range (-max_n) max_n) in
-(*     Printf.printf "max_m: %d, max_n: %d, number of points in rectangle: %d\n" max_m max_n (List.length rectangle); *)
+    Printf.printf "max_m: %d, max_n: %d, number of points in rectangle: %d\n" max_m max_n (List.length rectangle);
     (* returns list of possible v1s and list of possible v2s, as well as if a small vector was found *)
     let (v1_list, v2_list, very_small_vector_found) =
       let small_vector_threshold = sqrt (1./.100.) in
@@ -123,12 +122,23 @@ module Halfplane_sl2z : Space.Space with type point = float * float = struct
               let v = (f_m*.b11 +. f_n*.b21, f_m*.b12 +. f_n*.b22) in
               let quadded = apply_quad q1 v in
               let (vx, vy) = v in
-(*               Printf.printf "Lattice vector: (%.1f, %.1f). q1(v) = %f. " vx vy quadded; *)
+(*               Printf.printf "Lattice vector: (%.1f, %.1f). q1(v) = %f.\n" vx vy quadded; *)
               let found' = found || (quadded < small_vector_threshold) in
-(*            Printf.printf "(%.1f, %.1f, %.1f, %.1f) applied to (%.1f, %.1f) is %f.\n" qa qb qb' qc (fst v) (snd v) quadded; *)
+(*            Printf.printf "(%.1f, %.1f, %.1f, %.1f) applied to (%.1f, %.1f) is %f." qa qb qb' qc (fst v) (snd v) quadded; *)
               (* check that above inequalities are satisfied *)
-              let v1s' = if quadded >= small_rad1 && quadded <= rad1 then v::v1s else v1s in
-              let v2s' = if quadded >= small_rad2 && quadded <= rad2 then v::v2s else v2s in
+              let v1s' =
+                if quadded >= small_rad1 && quadded <= rad1 then (
+(*                   Printf.printf "\t v1: yes"; *)
+                  v::v1s
+                ) else v1s
+              in
+              let v2s' =
+                if quadded >= small_rad2 && quadded <= rad2 then (
+(*                   Printf.printf "\t v2: yes"; *)
+                  v::v2s
+                ) else v2s
+              in
+(*               Printf.printf "\n"; *)
               build' v1s' v2s' mns' found'
       in
       build' [] [] rectangle false
@@ -140,13 +150,16 @@ module Halfplane_sl2z : Space.Space with type point = float * float = struct
         | [] -> gs
         | (v1, v2) :: v1v2s' ->
             let g = find_matrix b1 b2 v1 v2 in
+            let (ga, gb, gc, gd) = g in
+(*             Printf.printf "g: (%.1f %.1f %.1f %.1f) " ga gb gc gd; *)
             (* condition for g to be in SL2(ZZ) *)
-(*
-      let (ga,gb,gc,gd) = g in let (b11, b12) = b1 in let (b21, b22) = b2 in let (v11, v12) = v1 in let (v21, v22) = v2 in
-      Printf.printf "(%.1f %.1f %.1f %.1f) takes (%.1f, %.1f) to (%.1f, %.1f) and (%.1f, %.1f) to (%.1f, %.1f). "
-        ga gb gc gd b11 b12 v11 v12 b21 b22 v21 v22;
-*)
-      let gs' = if det g = 1.0 then g::gs else gs in
+            let gs' =
+              if det g = 1.0 then (
+(*                 Printf.printf "Accept."; *)
+                g::gs
+              ) else gs
+            in
+(*             Printf.printf "\n"; *)
             build' gs' v1v2s'
       in
       build' [] (product v1_list v2_list)
@@ -155,27 +168,28 @@ module Halfplane_sl2z : Space.Space with type point = float * float = struct
     | [] ->
         (max_float, true)
     | _ ->
+        let un_nan x = if compare x Float.nan = 0 then 0.0 else x in
         let dist_after_gamma g : gamma * float =
           let q2' = multiply (transpose g) (multiply q2 g) in  (* we will find dist(q1, g^{-1}*q(2)) *)
           let bigA = multiply (inv q1) q2' in
           let (l1, l2) = eig bigA in
           let l1' = Float.abs (log l1) in  (* this distance between quad-forms is ... *)
           let l2' = Float.abs (log l2) in  (* ... equivalent to distance in H^2 *)
-          let lmax = if l1' > l2' then l1' else l2' in
+          let lmax = un_nan (if l1' > l2' then l1' else l2') in
           let (ga, gb, gc, gd) = g in
-(*
           let (x, y) = mobius g (x1, y1) in
           Printf.printf "g: (%.1f %.1f %.1f %.1f); Dist. b/w (%.1f, %.1f) and (%.1f, %.1f) is apparently %f.\n"
             ga gb gc gd x y x2 y2 lmax;
-*)
           (g, lmax)
         in
         let pairs = List.map dist_after_gamma g_list in
-        let min' (g1, a) (g2, b) = if a < b then (g1, a) else (g2, b) in
+        let min' (g1, a) (g2, b) =
+          let a', b' = un_nan a, un_nan b in
+          if a' < b' then (g1, a') else (g2, b') in
         let (min_g, min_dist) = List.fold_left min' ((1.,0.,0.,1.), max_float) pairs in
         let (ga, gb, gc, gd) = min_g in
         Printf.printf
-          "Quot. dist. btw (%.1f, %.1f) and (%.1f, %.1f) is %f, w/ gamma = (%.1f, %.1f, %.1f, %.1f). Small vector: %s.\n"
+          "Dist. btw (%f, %f) and (%f, %f) is %f -- here gamma = (%f, %f, %f, %f). Small vector: %s.\n"
           x1 y1 x2 y2 min_dist ga gb gc gd (if very_small_vector_found then "true" else "false");
 (* Printf.printf "Trace: %f\n" (ga +. gd); flush stdout; *)
         let halfplane_dist p q = fst (Halfplane.Halfplane.dist p q) in
@@ -203,8 +217,9 @@ module Halfplane_sl2z : Space.Space with type point = float * float = struct
     else raise (Sl2z_error "I am only trained to handle r=0.5.")
 
   let to_screen (x, y) r =
-(*     (x, y *. cosh r), (y *. sinh r), (x, y) *)
+    (x, y *. cosh r), (y *. sinh r), (x, y)
     (* translate into "standard" fundamental domain before printing *)
+(*
     let module C = Complex in
     let print_cplx z =
       Printf.printf "%f + i(%f)\n" z.C.re z.C.im
@@ -229,4 +244,5 @@ module Halfplane_sl2z : Space.Space with type point = float * float = struct
     let x' = z'.C.re in
     let y' = z'.C.im in
     (x', y' *. cosh r), (y' *. sinh r), (x', y')
+*)
 end
