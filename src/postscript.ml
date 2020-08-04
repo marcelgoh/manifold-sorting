@@ -68,6 +68,7 @@ let preamble ="
 %!PS
 /dot { 1.5 0 360 arc closepath fill } def
 /circle { 0 360 arc closepath stroke } def
+/uppersemi { 0 180 arc closepath stroke } def
 /Courier findfont 9 scalefont setfont
 /ytick { newpath moveto -5 0 rmoveto 10 0 rlineto stroke} def
 /xtick { newpath moveto 0 -5 rmoveto 0 10 rlineto stroke} def
@@ -193,6 +194,19 @@ let draw_point fp stgs ((x, y), r, (x', y')) =
     let f a = a *. stgs.scale in
     output_string fp (sprintf "%f %f %f circle\n" (f x) (f y) (f r))
   )
+
+(* draws the upper semicircle of radius 1 around a point on the x-axis *)
+let draw_semicircle fp stgs (x : float) =
+  let f a = a *. stgs.scale in
+  output_string fp (sprintf "newpath %f %f %f uppersemi\n" (f x) 0.0 (f 1.0))
+
+let draw_hor_line fp stgs (y : float) =
+  let y' = y *. stgs.scale in
+  output_string fp (sprintf "newpath -350 %f moveto 350 %f lineto stroke\n" y' y')
+
+let draw_vertical_boundary fp stgs (x : float) =
+  let f a = a *. stgs.scale in
+  output_string fp (sprintf "newpath %f %f moveto %f 796 lineto stroke\n" (f x) (f (sin (Float.pi/.3.))) (f x))
 
 let draw_line_segment fp stgs (x1, y1) (x2, y2) =
   if x1 > 1000. || y1 > 1000. || x2 > 1000. || y2 > 1000.

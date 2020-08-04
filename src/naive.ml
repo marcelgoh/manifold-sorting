@@ -34,10 +34,11 @@ module Naive (Space : Space.Space) = (struct
     let rep = Space.simpl p in
     match nearest_neighbour g rep with
     | None -> D.add g rep; (true, 0, true)
-    | Some (_, min_dist, comp_count, glc) ->
-       (* let (px, py) = p in
-      Printf.printf "(%f, %f) -- (%f, %f); min_dist = %f\n" px py qx qy min_dist; *)
-       if min_dist > threshold then (D.add g rep; (true, comp_count, glc)) else (false, comp_count, glc)
+    | Some (q, min_dist, comp_count, glc) ->
+       let ((px, py), _, _) = Space.to_screen p 0.0 in
+       let ((qx, qy), _, _) = Space.to_screen q 0.0 in
+       Printf.printf "(%f, %f) -- (%f, %f); min_dist = %f\n" px py qx qy min_dist;
+       if min_dist > threshold then (Printf.printf "(%f, %f) was added!\n" px py; D.add g rep; (true, comp_count, glc)) else (false, comp_count, glc)
 
   (* fills a parallelogram; the start point is assumed to be in the bounds *)
   let fill_space threshold start_p =
@@ -74,7 +75,6 @@ module Naive (Space : Space.Space) = (struct
         let offsets = List.filter (fun x -> r >= fst (Space.dist x center)) (Space.get_local_cover threshold p) in
         let (flag, count, grow_local_cover) = add_to_grid g threshold p in
         if flag && grow_local_cover then (
-            (* Printf.printf "added\n"; *)
             List.iter (fun q -> S.push q stack) offsets; (* pushes 6 new points on stack *)
             loop ((count, true) :: comp_counts)
         ) else

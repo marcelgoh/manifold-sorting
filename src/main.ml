@@ -36,4 +36,5 @@ let _ =
    * P.close_ps_file fp; *)
   Test.run_halfplane_gamma_test "halfplanegamma" true
 (*   Test.fill_euclidean_ball "euclideanball" 0.5 true; *)
+(*   Hs.dist (1.3, 1.1) (0.3, 1.2) *)
   (* Test.halfplane_comp_test "hi" 9.0 *)
