@@ -37,7 +37,7 @@ let compute_gs k_max k bb_star bb mu b big_b =
 
 let reduce mu k l bb h =
   if abs_float mu.(!k).(l) > 0.5 then
-    let rounded = Float.round mu.(!k).(l) in
+    let rounded = floor (0.5 +. mu.(!k).(l)) in
     set_vec bb.(!k) (sub_vecf bb.(!k) (scale_vecf rounded bb.(l)));
     set_vec h.(!k) (sub_veci h.(!k) (scale_veci (int_of_float rounded) h.(l)));
     mu.(!k).(l) <- mu.(!k).(l) -. rounded;

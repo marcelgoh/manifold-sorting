@@ -323,19 +323,19 @@ let fill_euclidean_ball filename threshold print_output =
   P.close_ps_file fp
 
 let run_halfplane_gamma_test filename print_output =
-  let to_list = (fun g -> List.map (fun p -> Hs.to_screen p 0.5) (Nhs.to_list g)) in
+  let to_list = (fun g -> List.map (fun p -> Hs.to_screen p 1.) (Nhs.to_list g)) in
   let start_time = Sys.time () in
   let (grid, _) = Nhs.fill_ball (0.0, 3.0) max_float 0.5 (0.0, 3.0) in
   let fill_time = Sys.time () -. start_time in
   let settings = { P.default with
     P.xorigin = 306;
     P.yorigin = 20;
-    P.scale = 300./.10.;
+    P.scale = 300./.300.;
   } in
   let fp = P.create_ps_file ("out/" ^ filename) in
   P.plot_grid fp settings (to_list grid);
   output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (Nhs.grid_size grid));
   List.iter (P.draw_semicircle fp settings) [-1.; 0.; 1.];
   List.iter (P.draw_vertical_boundary fp settings) [-1.5; -0.5; 0.5; 1.5];
-  P.draw_hor_line fp settings 10.;
+  P.draw_hor_line fp settings 300.;
   P.close_ps_file fp;
