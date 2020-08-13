@@ -323,19 +323,56 @@ let fill_euclidean_ball filename threshold print_output =
   P.close_ps_file fp
 
 let run_halfplane_gamma_test filename print_output =
-  let to_list = (fun g -> List.map (fun p -> Hs.to_screen p 1.) (Nhs.to_list g)) in
-  let start_time = Sys.time () in
-  let (grid, _) = Nhs.fill_ball (0.0, 3.0) max_float 0.5 (0.0, 3.0) in
-  let fill_time = Sys.time () -. start_time in
-  let settings = { P.default with
-    P.xorigin = 306;
-    P.yorigin = 20;
-    P.scale = 300./.300.;
+  Utils.small_vector_denom := 1000000.;
+  printf "Small-vector threshold: sqrt(1/%f).\n" !Utils.small_vector_denom; flush stdout;
+  let r_list = [0.5; 0.4; 0.3; 0.2; 0.17; 0.13; 0.1; 0.08; 0.07; 0.06; 0.05; 0.04; 0.03] in
+  let handle_one_r r =
+    printf "Handling r = %f.\n" r; flush stdout;
+    let suffix =
+      if !Utils.halfplane_sl2z_use_lll then
+         Str.global_replace (Str.regexp_string ".") "-" (sprintf "%g-lll" r)
+      else
+         Str.global_replace (Str.regexp_string ".") "-" (sprintf "%g-no-lll" r)
+    in
+    let fp = P.create_ps_file (sprintf "out/%s--%s" filename suffix) in
+    Utils.halfplane_sl2z_r := r;
+    let to_list = (fun g -> List.map (fun p -> Hs.to_screen p (2.*.r)) (Nhs.to_list g)) in
+    let start_time = Sys.time () in
+    let (grid, _) = Nhs.fill_ball (0., 3.) max_float r (0., 3.) in
+    let fill_time = Sys.time () -. start_time in
+    printf "Fill time: %f secs.\n" fill_time;
+    let settings = { P.default with
+      P.xorigin = 306;
+      P.yorigin = 20;
+      P.scale = 300./.10.;
+    } in
+    P.plot_grid fp settings (to_list grid);
+    output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (Nhs.grid_size grid));
+    List.iter (P.draw_semicircle fp settings) [-1.; 0.; 1.];
+    List.iter (P.draw_vertical_boundary fp settings) [-1.5; -0.5; 0.5; 1.5];
+    P.draw_hor_line fp settings 10.;
+    P.close_ps_file fp;
+    (r, Nhs.grid_size grid, fill_time)
+  in
+  Utils.halfplane_sl2z_use_lll := false;
+  printf "LLL is switched off.\n"; flush stdout;
+  let no_lll_pts = List.map handle_one_r r_list in
+  Utils.halfplane_sl2z_use_lll := true;
+  printf "LLL is switched on.\n"; flush stdout;
+  let lll_pts = List.map handle_one_r r_list in
+  let f_max x y = if x > y then x else y in
+  let graph_settings = { P.default_graph with
+    P.xmax = float_of_int (max_in_list_int (List.rev_map second_triple no_lll_pts));
+    P.ymax = f_max (max_in_list_float (List.rev_map third_triple lll_pts))
+                       (max_in_list_float (List.rev_map third_triple no_lll_pts));
+    P.ylabeloffsets = 22;
+    P.write_thresholds = true;  (* here "threshold" is actually the radius *)
   } in
-  let fp = P.create_ps_file ("out/" ^ filename) in
-  P.plot_grid fp settings (to_list grid);
-  output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (Nhs.grid_size grid));
-  List.iter (P.draw_semicircle fp settings) [-1.; 0.; 1.];
-  List.iter (P.draw_vertical_boundary fp settings) [-1.5; -0.5; 0.5; 1.5];
-  P.draw_hor_line fp settings 300.;
-  P.close_ps_file fp;
+  let fp = P.create_ps_file ("test/" ^ filename) in
+  let print_one_point (r, size, time) =
+    printf "(%f %d %f) " r size time
+  in
+  List.iter print_one_point lll_pts; printf "\n";
+  P.draw_graph fp graph_settings [(P.green, lll_pts); (P.red, no_lll_pts)] "NO. OF POINTS" "TIME (s)";
+  P.close_ps_file fp
+

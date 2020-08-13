@@ -72,52 +72,66 @@ module Halfplane_sl2z : Space.Space with type point = float * float = struct
 *)
     (a, b, c, d)
 
-  (* returns distance if it is <= 0.5, otherwise returns max_float *)
+
+  (* returns distance if it is <= !Utils.halfplane_sl2z_r, otherwise returns max_float *)
   let dist (x1, y1) (x2, y2) : float * bool =
-    let verbose =
-      false
+    let small_vector_threshold = sqrt (1./. (!Utils.small_vector_denom)) in
+    let verbose, lll =
+      false, !Utils.halfplane_sl2z_use_lll
     in
     let q1 = quad_of_point (x1, y1) in
     let q2 = quad_of_point (x2, y2) in
     let (q1a, q1b, q1c, q1d) = q1 in let (q2a, q2b, q2c, q2d) = q2 in
     if verbose then Printf.printf "Quadratic form for point (%.1f, %.1f) is %fx^2 + %fxy + %fy^2.\n" x1 y1 q1a (q1b +. q1c) q1d;
     if verbose then Printf.printf "Quadratic form for point (%.1f, %.1f) is %fx^2 + %fxy + %fy^2.\n" x2 y2 q2a (q2b +. q2c) q2d;
-    let start_b1 = (1.0, 0.0) in
-    let start_b2 = (0.0, 1.0) in
     (* LLL reduction *)
-    let (new_basis, bigH) = Lll.lll [[1.0; 0.0]; [0.0; 1.0]] [[q1a; q1b]; [q1c; q1d]] in
-    let b11 = List.nth (List.nth new_basis 0) 0 in
-    let b12 = List.nth (List.nth new_basis 0) 1 in
-    let b21 = List.nth (List.nth new_basis 1) 0 in
-    let b22 = List.nth (List.nth new_basis 1) 1 in
+    let (b11, b12, b21, b22) =
+      if lll then (
+        let (new_basis, bigH) = Lll.lll [[1.0; 0.0]; [0.0; 1.0]] [[q1a; q1b]; [q1c; q1d]] in
+        (List.nth (List.nth new_basis 0) 0, List.nth (List.nth new_basis 0) 1,
+         List.nth (List.nth new_basis 1) 0, List.nth (List.nth new_basis 1) 1)
+    ) else (
+        (1., 0., 0., 1.)
+    ) in
     let (b1, b2) = ((b11, b12), (b21, b22)) in
     if verbose then Printf.printf "New basis: (%.2f, %.2f) (%.2f, %.2f).\n" b11 b12 b21 b22;
     (* compute bounds for v_i: e^(-1)q1(b1) <= q2(v1) <= e*q1(b1) and e^(-1)q1(b2) <= q2(v2) <= e*q1(b2) *)
     let (rad1, rad2, small_rad1, small_rad2) =
       let q1b1 = apply_quad q1 b1 in
       let q1b2 = apply_quad q1 b2 in
-      let ee = exp 1.0 in
-      let small_ee = exp (-.1.0) in
+      let ee = exp (3.0 *. (!Utils.halfplane_sl2z_r)) in
+      let small_ee = exp ((-.2.) *. (!Utils.halfplane_sl2z_r)) in
+(*       let ee = exp 1.0 in *)
+(*       let small_ee = exp (-.1.0) in *)
       (ee*.q1b1, ee*.q1b2, small_ee*.q1b1, small_ee*.q1b2)
     in
     if verbose then Printf.printf "rad1: %f, rad2: %f, small_rad1: %f, small_rad2: %f\n" rad1 rad2 small_rad1 small_rad2;
-    let (qa, qb, qb', qc) = q2 in
-    if qb <> qb' then raise (Sl2z_error "Quadratic form is not symmetric.");
+    (* LLL reduction *)
+    let (b11, b12, b21, b22) =
+      if lll then (
+        let (new_basis, bigH) = Lll.lll [[1.0; 0.0]; [0.0; 1.0]] [[q2a; q2b]; [q2c; q2d]] in
+        (List.nth (List.nth new_basis 0) 0, List.nth (List.nth new_basis 0) 1,
+         List.nth (List.nth new_basis 1) 0, List.nth (List.nth new_basis 1) 1)
+    ) else (
+        (1., 0., 0., 1.)
+    ) in
+    let (qa, qb, qb'', qc) = q2 in
+    if qb <> qb'' then raise (Sl2z_error "Quadratic form is not symmetric.");
     (* coefficients of quadratic form *)
     let qa' = qa *.b11*.b11 +. 2.0*.qb*.b11*.b12 +. qc*.b12*.b12 in
     let qb' = 2.0*.(qa*.b11*.b21 +. qb*.(b21*.b12 +. b11*.b22) +. qc*.b12*.b22) in
     let qc' = qa *.b21*.b21 +. 2.0*.qb*.b21*.b22 +. qc*.b22*.b22 in
-(*     Printf.printf "New quadratic form is %fx^2 + %fxy + %fy^2.\n" qa' qb' qc'; *)
+    if verbose then Printf.printf "New quadratic form is %.10fx^2 + %.10fxy + %.10fy^2.\n" qa' qb' qc';
     let max_rad = if rad1 > rad2 then rad1 else rad2 in
     (* solve Lagrange multiplier problem *)
     let qb'2 = qb'*.qb' in
+    if verbose then Printf.printf "max_rad: %.10f.\n" max_rad;
     let max_m = truncate (sqrt (max_rad /. (qa' -. (qb'2/.(4.0*.qc'))))) in
     let max_n = truncate (sqrt (max_rad /. (qc' -. (qb'2/.(4.0*.qa'))))) in
     let rectangle = product (range (-max_m) max_m) (range (-max_n) max_n) in
     if verbose then Printf.printf "max_m: %d, max_n: %d, number of points in rectangle: %d\n" max_m max_n (List.length rectangle);
     (* returns list of possible v1s and list of possible v2s, as well as if a small vector was found *)
     let (v1_list, v2_list, very_small_vector_found) =
-      let small_vector_threshold = sqrt (1./.20000.) in
       let rec build' v1s v2s mns found =
         match mns with
         | [] -> (v1s, v2s, found)  (* these will be in reverse order, but who cares *)
@@ -207,50 +221,47 @@ module Halfplane_sl2z : Space.Space with type point = float * float = struct
 
   let simpl (x,y) = (x,y)
 
-  let offset_list =
+  let offset_list r' =
+    let r = r' *. 2. in
     [
-      (0., 0.4);
-      (0., 2.5);
-      (0.35, 0.55);
-      (-0.35, 0.55);
-      (0.8, 0.8);
-      (-0.8, 0.8);
-      (0.8, 1.5);
-      (-0.8, 1.5);
+      (0.*.r, (0.4 -.1.) *.r +.1.);
+      (0.*.r, (2.5 -.1.) *.r +.1.);
+      (0.35*.r, (0.55 -.1.) *.r +.1.);
+      (-0.35*.r, (0.55 -.1.) *.r +.1.);
+      (0.8*.r, (0.8 -.1.) *.r +.1.);
+      (-0.8*.r, (0.8 -.1.) *.r +.1.);
+      (0.8*.r, (1.5 -.1.) *.r +.1.);
+      (-0.8*.r, (1.5 -.1.) *.r +.1.);
     ]
 
   let get_local_cover r (x, y) =
-    if r = 0.5 then
-      List.map (fun (x', y') -> (x +. (x' *. y), y *. y')) offset_list
-    else raise (Sl2z_error "I am only trained to handle r=0.5.")
+    List.map (fun (x', y') -> (x +. (x' *. y), y *. y')) (offset_list r)
 
   let to_screen (x, y) r =
-    (x, y *. cosh r), (y *. sinh r), (x, y)
+(*     (x, y *. cosh r), (y *. sinh r), (x, y) *)
     (* translate into "standard" fundamental domain before printing *)
-(*
     let module C = Complex in
     let print_cplx z =
-      printf.printf "%f + i(%f)\n" z.c.re z.c.im
+      Printf.printf "%f + i(%f)\n" z.C.re z.C.im
     in
-    let z = { c.re = x; c.im = y } in
-(*     printf.printf "simpl: "; print_cplx z; *)
+    let z = { C.re = x; C.im = y } in
+(*     Printf.printf "simpl: "; print_cplx z; *)
     let rec translate_loop z' =
-      if float.abs (z'.c.re) <= 0.5 then
+      if Float.abs (z'.C.re) <= 0.5 then
         z'
       else (
-        if z'.c.re > 0.5 then ((*printf.printf "t- ";*) translate_loop { c.re=z'.c.re -. 1.0; c.im=z'.c.im })
-        else ((*printf.printf "t ";*) translate_loop { c.re=z'.re +. 1.0; c.im=z'.im })
+        if z'.C.re > 0.5 then ((*Printf.printf "t- ";*) translate_loop { C.re=z'.C.re -. 1.0; C.im=z'.C.im })
+        else ((*Printf.printf "t ";*) translate_loop { C.re=z'.re +. 1.0; C.im=z'.im })
       )
     in
     let rec outer_loop z' =
       let z'' = translate_loop z' in
-      if c.norm z'' >= 1.0 then z''
-      else ((*printf.printf "s- ";*) outer_loop (c.neg (c.inv z'')))
+      if C.norm z'' >= 1.0 then z''
+      else ((*Printf.printf "s- ";*) outer_loop (C.neg (C.inv z'')))
     in
     let z' = outer_loop z in
-(*     printf.printf "\nresult: "; print_cplx z'; *)
-    let x' = z'.c.re in
-    let y' = z'.c.im in
+(*     Printf.printf "\nresult: "; print_cplx z'; *)
+    let x' = z'.C.re in
+    let y' = z'.C.im in
     (x', y' *. cosh r), (y' *. sinh r), (x', y')
-*)
 end
