@@ -11,6 +11,8 @@ module Halfplane : Space.Space with type point = float * float = struct
 
   let simpl p = p
 
+  let to_string (px, py) = Printf.sprintf "(%f, %f)" px py
+
   let offset_list =
     [
       (0., 0.4);

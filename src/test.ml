@@ -323,8 +323,8 @@ let fill_euclidean_ball filename threshold print_output =
   P.close_ps_file fp
 
 let run_halfplane_gamma_test filename print_output =
-  Utils.small_vector_denom := 1000000.;
   printf "Small-vector threshold: sqrt(1/%f).\n" !Utils.small_vector_denom; flush stdout;
+(*   let r_list = [0.2] in *)
   let r_list = [0.5; 0.4; 0.3; 0.2; 0.17; 0.13; 0.1; 0.08; 0.07; 0.06; 0.05; 0.04; 0.03] in
   let handle_one_r r =
     printf "Handling r = %f.\n" r; flush stdout;
@@ -336,9 +336,9 @@ let run_halfplane_gamma_test filename print_output =
     in
     let fp = P.create_ps_file (sprintf "out/%s--%s" filename suffix) in
     Utils.halfplane_sl2z_r := r;
-    let to_list = (fun g -> List.map (fun p -> Hs.to_screen p (2.*.r)) (Nhs.to_list g)) in
+    let to_list = (fun g -> List.map (fun p -> Hs.to_screen p r) (Nhs.to_list g)) in
     let start_time = Sys.time () in
-    let (grid, _) = Nhs.fill_ball (0., 3.) max_float r (0., 3.) in
+    let (grid, _) = Nhs.fill_ball (0.,3.) max_float r (0.,3.) in
     let fill_time = Sys.time () -. start_time in
     printf "Fill time: %f secs.\n" fill_time;
     let settings = { P.default with
@@ -354,17 +354,23 @@ let run_halfplane_gamma_test filename print_output =
     P.close_ps_file fp;
     (r, Nhs.grid_size grid, fill_time)
   in
-  Utils.halfplane_sl2z_use_lll := false;
-  printf "LLL is switched off.\n"; flush stdout;
-  let no_lll_pts = List.map handle_one_r r_list in
   Utils.halfplane_sl2z_use_lll := true;
   printf "LLL is switched on.\n"; flush stdout;
   let lll_pts = List.map handle_one_r r_list in
+(*
+  Utils.halfplane_sl2z_use_lll := false;
+  printf "LLL is switched off.\n"; flush stdout;
+  let no_lll_pts = List.map handle_one_r r_list in
+*)
   let f_max x y = if x > y then x else y in
   let graph_settings = { P.default_graph with
+(*
     P.xmax = float_of_int (max_in_list_int (List.rev_map second_triple no_lll_pts));
     P.ymax = f_max (max_in_list_float (List.rev_map third_triple lll_pts))
                        (max_in_list_float (List.rev_map third_triple no_lll_pts));
+*)
+    P.xmax = float_of_int (max_in_list_int (List.rev_map second_triple lll_pts));
+    P.ymax = max_in_list_float (List.rev_map third_triple lll_pts);
     P.ylabeloffsets = 22;
     P.write_thresholds = true;  (* here "threshold" is actually the radius *)
   } in
@@ -373,6 +379,7 @@ let run_halfplane_gamma_test filename print_output =
     printf "(%f %d %f) " r size time
   in
   List.iter print_one_point lll_pts; printf "\n";
-  P.draw_graph fp graph_settings [(P.green, lll_pts); (P.red, no_lll_pts)] "NO. OF POINTS" "TIME (s)";
+  P.draw_graph fp graph_settings [(P.green, lll_pts)] "NO. OF POINTS" "TIME (s)";
   P.close_ps_file fp
+(*   Printf.printf "%f\n" (sqrt (1./. (!Utils.small_vector_denom))) *)
 

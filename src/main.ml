@@ -11,7 +11,7 @@ module Hs = Halfplane_sl2z.Halfplane_sl2z
 module Hl = Halfplane_soql.Halfplane_soql
 
 let _ =
-(*   T.run_para_test "kdonly1" true *)
+(*   T.run_para_test "kdandnaive" true *)
 
   (* let fp = P.create_ps_file "halfplane" in
    * let rec range n = if n < 1. then [] else range (n -. 1.) @ [n -. 1.] in
@@ -35,11 +35,23 @@ let _ =
    *  * P.plot_grid fp { P.default with scale=15. } (List.map (fun p -> H.to_screen p 0.5) (K.to_list grid));
    *  * P.plot_grid fp { P.default with scale=15. } [H.to_screen (0., 1.) 0.5]; *\)
    * P.close_ps_file fp; *)
-  Test.run_halfplane_gamma_test "halfplanegamma" true
+(*   Test.run_halfplane_gamma_test "halfplanegamma" true *)
+
+let (h_dist, _) = Hs.dist (0., 0.48) (0., 3.) in
+Printf.printf "halfplane distance: %f\n" h_dist;
+  Utils.small_vector_denom := 2.;
+  Utils.halfplane_sl2z_bigN := 4;
+  Hs.dist (0., 0.48) (0., 3.)
+(*   Test.run_halfplane_gamma_test "halfplanegammamod4" true *)
+
+(*   Test.run_halfplane_test "voronoi" true *)
 (*   Test.fill_euclidean_ball "euclideanball" 0.5 true; *)
 (*
   let x1, y1 = List.nth (Hs.get_local_cover 0.5 (List.nth (Hs.get_local_cover 0.5 (0.0, 3.0)) 0)) 1 in
   Hs.dist (x1, y1) (0.0, 3.0);
 *)
-(*   Hs.dist (0.384, 0.384) (0.0, 1.2) *)
-  (* Test.halfplane_comp_test "hi" 9.0 *)
+(*
+let (dist, glc) = Hs.dist (203.293250, 1342.703510) (386.257174, 1342.703510) in
+Printf.printf "distance = %f\t glc = %s\n" dist (if glc then "true" else "false")
+*)
+(*   Test.halfplane_comp_test "hi" 9.0 *)

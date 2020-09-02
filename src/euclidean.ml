@@ -4,6 +4,7 @@ module Euclidean : Space.Space with type point = float * float = struct
   let dist (x1, y1) (x2, y2) = (sqrt ((x1 -. x2) ** 2.0 +. (y1 -. y2) ** 2.0), true)
   let to_screen p r = (p, r, p)
   let simpl p = p
+  let to_string (px, py) = Printf.sprintf "(%f, %f)" px py
   let offset_list = [
       (0.0, 0.866);
       (0.75, 0.433);

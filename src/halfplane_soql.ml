@@ -6,6 +6,7 @@ module Halfplane_soql : Space.Space with type point = float * float = struct
   type quad = loid_point -> float
 
   let make_quad d : quad = (fun (x,y,z) -> x ** 2. +. y ** 2. -. d ** z ** 2.)
+  let to_string (px, py) = Printf.sprintf "(%f, %f)" px py
 
   (* returns distance if it is <= 0.5, otherwise returns max_float *)
   let dist (x1, y1) (x2, y2) : float * bool =

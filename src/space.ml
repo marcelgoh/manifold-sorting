@@ -5,6 +5,7 @@ module type Space = sig
   val dist : point -> point -> float * bool
   (*  (centre of circle, radius of circle, coordinate of point) *)
   val to_screen : point -> float -> (float * float) * float * (float * float)
+  val to_string : point -> string
   val simpl : point -> point
   val get_local_cover : float -> point -> point list
 end

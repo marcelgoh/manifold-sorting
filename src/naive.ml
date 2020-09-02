@@ -31,15 +31,13 @@ module Naive (Space : Space.Space) = (struct
 
   (* returns a boolean flag indicating whether point was added, as well as a comparison count *)
   let add_to_grid g threshold p : bool * int * bool =
-    let verbose = false in
+    let verbose = true in
     let rep = Space.simpl p in
     match nearest_neighbour g rep with
     | None -> D.add g rep; (true, 0, true)
     | Some (q, min_dist, comp_count, glc) ->
-       let ((px, py), _, _) = Space.to_screen p 0.0 in
-       let ((qx, qy), _, _) = Space.to_screen q 0.0 in
-       if verbose then Printf.printf "(%f, %f) -- (%f, %f); min_dist = %f\n" px py qx qy min_dist;
-       if min_dist > threshold then (if verbose then Printf.printf "(%f, %f) was added!\n" px py; D.add g rep; (true, comp_count, glc)) else (false, comp_count, glc)
+       if verbose then Printf.printf "%s -- %s; min_dist = %f; glc: %s\n" (Space.to_string p) (Space.to_string q) min_dist (if glc then "true" else "false"); flush stdout;
+       if min_dist > threshold then (if true then Printf.printf "%s was added!\n" (Space.to_string p); flush stdout; D.add g rep; (true, comp_count, glc)) else (false, comp_count, glc)
 
   (* fills a parallelogram; the start point is assumed to be in the bounds *)
   let fill_space threshold start_p =
@@ -64,6 +62,7 @@ module Naive (Space : Space.Space) = (struct
     loop []
 
   let fill_ball center r threshold start_p =
+    let verbose = false in
     let g = create_grid () in
     let stack = S.create () in
     S.push start_p stack;
@@ -76,8 +75,10 @@ module Naive (Space : Space.Space) = (struct
         let offsets = List.filter (fun x -> r >= fst (Space.dist x center)) (Space.get_local_cover threshold p) in
         let (flag, count, grow_local_cover) = add_to_grid g threshold p in
         if flag && grow_local_cover then (
-            List.iter (fun q -> S.push q stack) offsets; (* pushes 6 new points on stack *)
-            loop ((count, true) :: comp_counts)
+          if verbose then Printf.printf "Points in local cover around %s:\n\t" (Space.to_string p);
+          List.iter (fun q -> if verbose then Printf.printf "%s " (Space.to_string q); S.push q stack) offsets; (* pushes 6 new points on stack *)
+          if verbose then Printf.printf "\n";
+          loop ((count, true) :: comp_counts)
         ) else
           (* else *)
           (* Printf.printf "not added\n"; *)

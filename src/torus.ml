@@ -5,6 +5,7 @@ let torus u v =
 
      type point = float * float
 
+     let to_string (px, py) = Printf.sprintf "(%f, %f)" px py
      let add_points (x1, y1) (x2, y2) = (x1 +. x2, y1 +. y2)
      let scale_point alpha (x, y) = (alpha *. x, alpha *. y)
 
