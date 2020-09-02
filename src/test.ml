@@ -344,7 +344,7 @@ let run_halfplane_gamma_test filename print_output =
     let settings = { P.default with
       P.xorigin = 306;
       P.yorigin = 20;
-      P.scale = 300./.10.;
+      P.scale = 300./.1.5;
     } in
     P.plot_grid fp settings (to_list grid);
     output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (Nhs.grid_size grid));

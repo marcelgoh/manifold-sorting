@@ -37,12 +37,14 @@ let _ =
    * P.close_ps_file fp; *)
 (*   Test.run_halfplane_gamma_test "halfplanegamma" true *)
 
+(*
 let (h_dist, _) = Hs.dist (0., 0.48) (0., 3.) in
 Printf.printf "halfplane distance: %f\n" h_dist;
-  Utils.small_vector_denom := 2.;
+*)
+  Utils.small_vector_denom := 100.;
   Utils.halfplane_sl2z_bigN := 4;
-  Hs.dist (0., 0.48) (0., 3.)
-(*   Test.run_halfplane_gamma_test "halfplanegammamod4" true *)
+(*   Hs.dist (0., 0.48) (0., 3.) *)
+  Test.run_halfplane_gamma_test "halfplanegammamod4" true
 
 (*   Test.run_halfplane_test "voronoi" true *)
 (*   Test.fill_euclidean_ball "euclideanball" 0.5 true; *)

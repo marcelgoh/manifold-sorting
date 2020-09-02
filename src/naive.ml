@@ -31,13 +31,13 @@ module Naive (Space : Space.Space) = (struct
 
   (* returns a boolean flag indicating whether point was added, as well as a comparison count *)
   let add_to_grid g threshold p : bool * int * bool =
-    let verbose = true in
+    let verbose = false in
     let rep = Space.simpl p in
     match nearest_neighbour g rep with
     | None -> D.add g rep; (true, 0, true)
     | Some (q, min_dist, comp_count, glc) ->
        if verbose then Printf.printf "%s -- %s; min_dist = %f; glc: %s\n" (Space.to_string p) (Space.to_string q) min_dist (if glc then "true" else "false"); flush stdout;
-       if min_dist > threshold then (if true then Printf.printf "%s was added!\n" (Space.to_string p); flush stdout; D.add g rep; (true, comp_count, glc)) else (false, comp_count, glc)
+       if min_dist > threshold then (if verbose then Printf.printf "%s was added!\n" (Space.to_string p); flush stdout; D.add g rep; (true, comp_count, glc)) else (false, comp_count, glc)
 
   (* fills a parallelogram; the start point is assumed to be in the bounds *)
   let fill_space threshold start_p =

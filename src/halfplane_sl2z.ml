@@ -94,7 +94,7 @@ module Halfplane_sl2z : Space.Space with type point = float * float = struct
   let dist (x2, y2) (x1, y1) : float * bool =  (* THE ARGUMENTS ARE REVERSED! *)
     let small_vector_threshold = sqrt (1./. (!Utils.small_vector_denom)) in
     let verbose, lll =
-      true, !Utils.halfplane_sl2z_use_lll
+      false, !Utils.halfplane_sl2z_use_lll
     in
     let q1 = quad_of_point (x1, y1) in
     let q2 = quad_of_point (x2, y2) in
@@ -223,47 +223,56 @@ if verbose then Printf.printf "Minimum vector: (%f, %f)\t q2-value: %f\n" mv1 mv
           if not (Float.is_integer fa) || not (Float.is_integer fb) then raise (Sl2z_error "One of a,b not integer.");
           let a,b = int_of_float fa, int_of_float fb in
           let (_,_,d) = gcd a bigN in
-          if b mod d <> 0 then
-            []
-          else (
-            let a', b', bigN' = a/d, b/d, bigN/d in
-            let (r'',s'',d'') = gcd a' bigN' in
-            let (r', s', d') = if d = (-1) then (-r'',-s'',-d'') else (r'',s'',d'') in
-            (* r'*a' + s'(bigN') = 1, so r'*a' == 1 (mod bigN) *)
-            let t_cong = modulo (-(r'*b')) bigN' in  (* so t is congruent to t_cong (mod bigN') *)
-            let (qa, qb, _, qc) = q2 in  (* just in case someone messes it up between here and above *)
-            let alpha = qa*.v1x**2. +. 2.*.qb*.v1x*.v1y +. qc*.v1y**2. in
-            let beta = qa*.v1x*.cx +. 2.*.qb*.(cx*.v1y +. v1x*.cy) +. qc*.v1y*.cy in
-            let min_t = (-.beta)/.(2.*.alpha) in
-            let temp = int_of_float (Float.floor (min_t /. float_of_int bigN')) in
-            let flor' = temp - modulo temp bigN' + t_cong in
-            let flor, ceel = if float_of_int flor' < min_t then flor', flor' + bigN' else flor' - bigN', flor' in
-            let rec loop up acc t =
-              let t' = float_of_int t in
-              let v2_candidate = (cx +. t'*.v1x, cy +. t'*.v1y) in
-              let (v21, v22) = v2_candidate in
-              let (g1, g2, g3, g4) = find_matrix b1 b2 v1 v2_candidate in
-              if verbose && (int_of_float g3 mod bigN) <> 0 then (
-                Printf.printf "b1: (%f, %f)  b2: (%f, %f)  bigA: %f  bigB: %f\n" b1x b1y b2x b2y bigA bigB;
-                Printf.printf "v1: (%f, %f)  c: (%f, %f)  a: %d  b: %d\n" v1x v1y cx cy a b;
-                Printf.printf "a': %d  b': %d  bigN': %d  r': %d  s': %d  d': %d\n" a' b' bigN' r' s' d';
-                Printf.printf "t_cong: %d  min_t: %f  flor: %d  ceel %d\n" t_cong min_t flor ceel;
-                Printf.printf "here g: (%f, %f, %f, %f) from t = %d\n\n" g1 g2 g3 g4 t
-              );
-              let quadded = apply_quad q2 v2_candidate in
-                if verbose then Printf.printf "v1: (%f, %f)\tv2_can: (%f, %f)\t quadded: %f\n" v1x v1y v21 v22 quadded;
-              if quadded > rad2 then
-                acc
-              else (
-                let acc' = if quadded >= small_rad2 then (v2_candidate :: acc) else acc in
-                let t' = if up then t + bigN' else t - bigN' in
-                loop up acc' t'
-              )
-            in
-            let first_half = loop false [] flor in
-            let v2s = loop true first_half ceel in
-            List.rev_map (fun v2 -> (v1, v2)) v2s
-          )
+          if verbose then Printf.printf "a: %d  b: %d  d: %d\n" a b d;
+          if verbose then Printf.printf "b1: (%f, %f)  b2: (%f, %f)  bigA: %f  bigB: %f\n" b1x b1y b2x b2y bigA bigB;
+          if verbose then Printf.printf "v1: (%f, %f)  c: (%f, %f)\n" v1x v1y cx cy;
+          let pair =
+            if b mod d <> 0 then (
+              if a = 0 && bigB*.cy = 0.0 then
+                Some (0, 1)
+              else
+                None
+            ) else (
+              let a', b', bigN' = a/d, b/d, bigN/d in
+              let (r'',s'',d'') = gcd a' bigN' in
+              let (r', s', d') = if d = (-1) then (-r'',-s'',-d'') else (r'',s'',d'') in
+              if verbose then Printf.printf "a': %d  b': %d  bigN': %d  r': %d  s': %d  d': %d\n" a' b' bigN' r' s' d';
+              (* r'*a' + s'(bigN') = 1, so r'*a' == 1 (mod bigN) *)
+              Some (modulo (-(r'*b')) bigN', bigN')  (* so t is congruent to t_cong (mod bigN') *)
+            )
+          in
+          match pair with
+          | None -> []
+          | Some (t_cong, bigN') ->
+              let (qa, qb, _, qc) = q2 in  (* just in case someone messes it up between here and above *)
+              let alpha = qa*.v1x**2. +. 2.*.qb*.v1x*.v1y +. qc*.v1y**2. in
+              let beta = qa*.v1x*.cx +. 2.*.qb*.(cx*.v1y +. v1x*.cy) +. qc*.v1y*.cy in
+              let min_t = (-.beta)/.(2.*.alpha) in
+              let temp = int_of_float (Float.floor (min_t /. float_of_int bigN')) in
+              let flor' = temp - modulo temp bigN' + t_cong in
+              let flor, ceel = if float_of_int flor' < min_t then flor', flor' + bigN' else flor' - bigN', flor' in
+              let rec loop up acc t =
+                let t' = float_of_int t in
+                let v2_candidate = (cx +. t'*.v1x, cy +. t'*.v1y) in
+                let (v21, v22) = v2_candidate in
+                let (g1, g2, g3, g4) = find_matrix b1 b2 v1 v2_candidate in
+                if verbose then (
+                  Printf.printf "t_cong: %d  min_t: %f  flor: %d  ceel %d\n" t_cong min_t flor ceel;
+                  Printf.printf "here g: (%f, %f, %f, %f) from t = %d\n\n" g1 g2 g3 g4 t
+                );
+                let quadded = apply_quad q2 v2_candidate in
+                  if verbose then Printf.printf "v1: (%f, %f)\tv2_can: (%f, %f)\t quadded: %f\n" v1x v1y v21 v22 quadded;
+                if quadded > rad2 then
+                  acc
+                else (
+                  let acc' = if quadded >= small_rad2 then (v2_candidate :: acc) else acc in
+                  let t' = if up then t + bigN' else t - bigN' in
+                  loop up acc' t'
+                )
+              in
+              let first_half = loop false [] flor in
+              let v2s = loop true first_half ceel in
+              List.rev_map (fun v2 -> (v1, v2)) v2s
     in
     let rec tail_flatten acc lists =
       match lists with
@@ -348,8 +357,9 @@ if verbose then Printf.printf "Minimum vector: (%f, %f)\t q2-value: %f\n" mv1 mv
     List.map (fun (x', y') -> (x +. (x' *. y), y *. y')) (offset_list r)
 
   let to_screen (x, y) r =
-(*     (x, y *. cosh r), (y *. sinh r), (x, y) *)
+    (x, y *. cosh r), (y *. sinh r), (x, y)
     (* translate into "standard" fundamental domain before printing *)
+(*
     let module C = Complex in
     let print_cplx z =
       Printf.printf "%f + i(%f)\n" z.C.re z.C.im
@@ -374,4 +384,5 @@ if verbose then Printf.printf "Minimum vector: (%f, %f)\t q2-value: %f\n" mv1 mv
     let x' = z'.C.re in
     let y' = z'.C.im in
     (x', y' *. cosh r), (y' *. sinh r), (x', y')
+*)
 end

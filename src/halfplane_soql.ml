@@ -5,8 +5,14 @@ module Halfplane_soql : Space.Space with type point = float * float = struct
   type loid_point = float * float * float
   type quad = loid_point -> float
 
+  let mat_vec_mul (m1,m2,m3,m4,m5,m6,m7,m8,m9) (x1,x2,x3) =
+    (m1*.x1 +. m2*.x2 +. m3*.x3, m4*.x1 +. m5*.x2 +. m6*.x3, m7*.x1 +. m8*.x2 +. m9*.x3)
+
   let make_quad d : quad = (fun (x,y,z) -> x ** 2. +. y ** 2. -. d ** z ** 2.)
   let to_string (px, py) = Printf.sprintf "(%f, %f)" px py
+  let string_of_mat (m1,m2,m3,m4,m5,m6,m7,m8,m9) =
+    Printf.sprintf "(%f, %f, %f,  %f, %f, %f,  %f, %f, %f)" m1 m2 m3 m4 m5 m6 m7 m8 m9
+  let string_of_vec (x1,x2,x3) = Printf.sprintf "(%f, %f, %f)" x1 x2 x3
 
   (* returns distance if it is <= 0.5, otherwise returns max_float *)
   let dist (x1, y1) (x2, y2) : float * bool =
