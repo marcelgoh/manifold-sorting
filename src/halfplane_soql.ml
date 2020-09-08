@@ -7,6 +7,10 @@ module Halfplane_soql : Space.Space with type point = float * float = struct
 
   let mat_vec_mul (m1,m2,m3,m4,m5,m6,m7,m8,m9) (x1,x2,x3) =
     (m1*.x1 +. m2*.x2 +. m3*.x3, m4*.x1 +. m5*.x2 +. m6*.x3, m7*.x1 +. m8*.x2 +. m9*.x3)
+  let det (a,b,c,d,e,f,g,h,i) =
+    let det' (x,y,z,w) = x*.w -. y*.z in
+    a*.(det' (e,f,h,i)) -. b*.(det' (d,f,g,i)) +. c*.(det' (d,e,g,h))
+  let transpose (a,b,c,d,e,f,g,h,i) = (a,d,g,b,e,h,c,f,i)
 
   let make_quad d : quad = (fun (x,y,z) -> x ** 2. +. y ** 2. -. d ** z ** 2.)
   let to_string (px, py) = Printf.sprintf "(%f, %f)" px py
@@ -22,6 +26,7 @@ module Halfplane_soql : Space.Space with type point = float * float = struct
     let denom2 = (x2 ** 2. +. (1. +. y2) ** 2.) in
     let disk_x2 = (2.0 *. x2) /. denom2 in
     let disk_y2 = (x2 ** 2. +. y2 ** 2. -. 1.) /. denom2 in
+
     let denom3 = 1. -. disk_x1 ** 2. -. disk_y1 ** 2. in
     let t1 = (1. +. disk_x1 ** 2. +. disk_y1 ** 2.) /. denom3 in
     let x1' = (2. *. disk_x1) /. denom3 in
@@ -30,8 +35,12 @@ module Halfplane_soql : Space.Space with type point = float * float = struct
     let t2 = (1. +. disk_x2 ** 2. +. disk_y2 ** 2.) /. denom4 in
     let x2' = (2. *. disk_x2) /. denom4 in
     let y2' = (2. *. disk_y2) /. denom4 in
-    let p1 = (t1, x1', y1') in
-    let p2 = (t2, x2', y2') in
+    let v1 = (t1, x1', y1') in
+    let v2 = (t2, x2', y2') in
+
+    (* find majorant associated with p1 *)
+    (* LLL-reduce Z^3 lattice with respect to q1
+
     raise (Soql_error "Not yet implemented.")
 
   let simpl (x,y) = (x,y)
