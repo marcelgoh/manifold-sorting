@@ -35,11 +35,26 @@ module Halfplane_soql : Space.Space with type point = float * float = struct
     let t2 = (1. +. disk_x2 ** 2. +. disk_y2 ** 2.) /. denom4 in
     let x2' = (2. *. disk_x2) /. denom4 in
     let y2' = (2. *. disk_y2) /. denom4 in
-    let v1 = (t1, x1', y1') in
-    let v2 = (t2, x2', y2') in
+    let p1 = (t1, x1', y1') in
+    let p2 = (t2, x2', y2') in
 
-    (* find majorant associated with p1 *)
-    (* LLL-reduce Z^3 lattice with respect to q1
+    (* find majorants associated with p1,p2 call them m1,m2 *)
+    (* we are trying to enumerate all f = gamma such that f(m1) is close to m2 *)
+    (* LLL-reduce Z^3 lattice with respect to m1 to get basis b1,b2,b3 *)
+    (* August 10 notes *)
+    (* find all v1 satisfying some m2(v1) <= exp(2*r)*m1(b1) *)
+    (* for every v1:
+      * we know f maps b1 to v1
+      * so the complement of span(b1) maps to the complement of span(v1)
+      * LLL reduce span(b1)^\perp to get basis vectors b2', b3'
+      * find all v2 satisfying m2(v2) <= exp(2*r)*m1(b2)
+      * for every v2:
+        * we know f maps b2' to v2
+        * ... ?
+        * find all v3 satisfying m2(v3) <= exp(2*r)*m1(b3)
+        * for every v3:
+          * we now know f. check if f is in SO(Q,L) -- August 24 notes (Q1 and Q2 near the end). *)
+    (* loop over all f and take minimum *)
 
     raise (Soql_error "Not yet implemented.")
 
