@@ -8,6 +8,13 @@ let tail_mapi f x_list =
   in
   helper 0 [] x_list
 
+let e_len3 (x, y, z) = sqrt (x*.x +. y*.y +. z*.z)
+let e_dot3 (x1, y1, z1) (x2, y2, z2) = x1*.x2 +. y1*.y2 +. z1*.z2
+let e_scalar_mul3 a (x, y, z) = (a*.x, a*.y, a*.z)
+let e_unit3 v = e_scalar_mul3 (1. /. e_len3 v) v
+let e_add3 (x1, y1, z1) (x2, y2, z2) = (x1+.x2, y1+.y2, z1+.z2)
+let e_sub3 (x1, y1, z1) (x2, y2, z2) = (x1-.x2, y1-.y2, z1-.z2)
+
 (* yes, using refs is sketchy, i agree. *)
 let small_vector_denom = ref 20000.0
 let halfplane_sl2z_r = ref 0.5

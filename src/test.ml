@@ -8,6 +8,7 @@ let v = (5.0, 60.0)
 module T = (val Torus.torus u v : Space.Space with type point = float * float)
 module H = Halfplane.Halfplane
 module Hs = Halfplane_sl2z.Halfplane_sl2z
+module Hsoql = (val Halfplane_soql.halfplane_soql (fun x -> 1.0))
 module E = Euclidean.Euclidean
 
 let pi = (acos (-.1.))
@@ -193,7 +194,7 @@ let run_halfplane_test filename print_output =
   in
   let fp = P.create_ps_file ("test/" ^ filename) in
   (* let ball_radii = [2.5] in *)
-  let ball_radii = [2.0; 3.0; 4.0; 4.5; 5.0; 5.5; 6.0; 6.5; 6.75; 7.0; 7.25; 7.5; 7.75; 8.0; 8.25; 8.5; 8.75] in
+  let ball_radii = [1.; 2.0; 2.5; 3.0; 4.0; 4.5; 5.0; 5.5; 6.0; 6.5; 6.75; 7.0; 7.25; 7.5; 7.75; 8.0; 8.25; 8.5; 8.75] in
   Printf.printf "kd\n";
   let kd_pts = Utils.tail_mapi (fun i r -> Printf.printf "%f " r; flush stdout; build_kd_pts i r) ball_radii in
 (*

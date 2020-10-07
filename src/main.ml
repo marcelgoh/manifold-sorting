@@ -8,7 +8,6 @@ module T = Test
 module H = Halfplane.Halfplane
 module N = Naive.Naive(H)
 module Hs = Halfplane_sl2z.Halfplane_sl2z
-module Hl = Halfplane_soql.Halfplane_soql
 
 let _ =
 (*   T.run_para_test "kdandnaive" true *)
@@ -57,3 +56,15 @@ let (dist, glc) = Hs.dist (203.293250, 1342.703510) (386.257174, 1342.703510) in
 Printf.printf "distance = %f\t glc = %s\n" dist (if glc then "true" else "false")
 *)
 (*   Test.halfplane_comp_test "hi" 9.0 *)
+(*   Hs.dist (0.384, 0.384) (0.0, 1.2) *)
+  (* Test.run_halfplane_gamma_test "halfplanegamma" true *)
+(*   Test.fill_euclidean_ball "euclideanball" 0.5 true; *)
+  (* let x1, y1 = List.nth (Hs.get_local_cover 0.5 (List.nth (Hs.get_local_cover 0.5 (0.0, 3.0)) 0)) 1 in
+   * Hs.dist (x1, y1) (0.0, 3.0);
+   * Hs.dist (0.0, 3.0) (0.0, 3.0) *)
+  (* Test.halfplane_comp_test "hi" 9.0 *)
+  (* let b = [[1.;0.];[0.;1.]] in
+   * let bb, h = Lll.lll [[101.; 100.;]; [1.; 1.]] b in
+   * Printf.printf "%f %f\n" (List.nth (List.nth bb 0) 0) (List.nth (List.nth bb 0) 1) (\* (List.nth (List.nth h 0) 2) *\);
+   * Printf.printf "%f %f\n" (List.nth (List.nth bb 1) 0) (List.nth (List.nth bb 1) 1) (\* (List.nth (List.nth h 1) 2) *\);
+   * (\* Printf.printf "%d %d %d\n" (List.nth (List.nth h 2) 0) (List.nth (List.nth h 2) 1) (List.nth (List.nth h 2) 2); *\) *)
