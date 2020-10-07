@@ -82,7 +82,8 @@ let second_triple (_, b, _) = b
 let third_triple (_, _, c) = c
 let max_in_list_float = List.fold_left max min_float
 let max_in_list_int = List.fold_left max min_int
-let plot_one_grid newfilename radius scale to_list grid_size idx grid =
+
+let plot_one_grid_halfplane newfilename radius scale to_list grid_size idx grid =
   let settings = { P.default with
     P.xorigin = 306;
     P.yorigin = 20;
@@ -163,7 +164,7 @@ let halfplane_comp_test filename ball_radius =
   P.scatterplot fp graph_settings [(P.green, added_pts); (P.red, excluded_pts)];
   P.close_ps_file fp;
   Printf.printf "%d\n" (Kh3.grid_size grid); ()
-  (* plot_one_grid "problempoints" ball_radius (300.0 /. (sinh ball_radius))
+  (* plot_one_grid_halfplane "problempoints" ball_radius (300.0 /. (sinh ball_radius))
    *      (fun g -> List.map (fun p -> let (x, y) = p in Printf.printf "(%f, %f)\n%f, %f, %f\n%f\n\n" (fst p) (snd p) (H.dist p (0., 1.)) (atan2 (x ** 2. +. y ** 2. -. 1.) (2. *. x)) (cos (atan2 (x ** 2. +. y ** 2. -. 1.) (2. *. x))) (sqrt (x ** 2. +. y ** 2.)); H.to_screen p 0.5) (Kh.to_list g)) Kh.grid_size 0 grid *)
 
 let run_halfplane_test filename print_output =
@@ -172,7 +173,7 @@ let run_halfplane_test filename print_output =
     let (grid, _) = Nh.fill_ball (0.0, 1.0) ball_radius 0.5 (0.0, 1.0) in
     let fill_time = Sys.time () -. start_time in
     if print_output then
-      plot_one_grid (filename ^ "naive") ball_radius (300.0 /. (sinh ball_radius))
+      plot_one_grid_halfplane (filename ^ "naive") ball_radius (300.0 /. (sinh ball_radius))
         (fun g -> List.map (fun p -> H.to_screen p 0.5) (Nh.to_list g)) Nh.grid_size idx grid;
     (ball_radius, Nh.grid_size grid, fill_time)
   in
@@ -257,7 +258,7 @@ let run_para_test filename print_output =
     let start_time = Sys.time () in
     let (grid, _) = N.fill_space threshold (26.5, 24.5) in
     let fill_time = Sys.time () -. start_time in
-    if print_output then plot_one_grid (filename ^ "naive") threshold (fun g -> List.map (fun p -> T.to_screen p threshold) (N.to_list g)) N.grid_size idx grid;
+    if print_output then plot_one_grid_halfplane (filename ^ "naive") threshold (fun g -> List.map (fun p -> T.to_screen p threshold) (N.to_list g)) N.grid_size idx grid;
     (threshold, N.grid_size grid, fill_time)
   in
 *)
@@ -324,8 +325,8 @@ let fill_euclidean_ball filename threshold print_output =
 
 let run_halfplane_gamma_test filename print_output =
   printf "Small-vector threshold: sqrt(1/%f).\n" !Utils.small_vector_denom; flush stdout;
-(*   let r_list = [0.2] in *)
-  let r_list = [0.5; 0.4; 0.3; 0.2; 0.17; 0.13; 0.1; 0.08; 0.07; 0.06; 0.05; 0.04; 0.03] in
+  let r_list = [0.05] in
+(*   let r_list = [0.5; 0.4; 0.3; 0.2; 0.17; 0.13; 0.1; 0.08; 0.07; 0.06; 0.05; 0.04; 0.03] in *)
   let handle_one_r r =
     printf "Handling r = %f.\n" r; flush stdout;
     let suffix =
@@ -344,7 +345,7 @@ let run_halfplane_gamma_test filename print_output =
     let settings = { P.default with
       P.xorigin = 306;
       P.yorigin = 20;
-      P.scale = 300./.1.5;
+      P.scale = 100.;
     } in
     P.plot_grid fp settings (to_list grid);
     output_string fp (sprintf "30 735 moveto (NO. POINTS: %d) show\n" (Nhs.grid_size grid));
@@ -383,3 +384,63 @@ let run_halfplane_gamma_test filename print_output =
   P.close_ps_file fp
 (*   Printf.printf "%f\n" (sqrt (1./. (!Utils.small_vector_denom))) *)
 
+let run_disk_test filename print_output =
+  printf "Small-vector threshold: sqrt(1/%f).\n" !Utils.small_vector_denom; flush stdout;
+  let r_list = [0.05] in
+(*   let r_list = [0.5; 0.4; 0.3; 0.2; 0.17; 0.13; 0.1; 0.08; 0.07; 0.06; 0.05; 0.04; 0.03] in *)
+  let handle_one_r r =
+    printf "Handling r = %f.\n" r; flush stdout;
+    let suffix =
+      if !Utils.halfplane_sl2z_use_lll then
+         Str.global_replace (Str.regexp_string ".") "-" (sprintf "%g-lll" r)
+      else
+         Str.global_replace (Str.regexp_string ".") "-" (sprintf "%g-no-lll" r)
+    in
+    let fp = P.create_ps_file (sprintf "out/%s--%s" filename suffix) in
+    Utils.halfplane_sl2z_r := r;
+    let start_pt = (0.,3.) in
+    let to_list = (fun g -> List.map (fun p -> Utils.to_screen_disk start_pt p (r)) (Nhs.to_list g)) in
+    let start_time = Sys.time () in
+    let (grid, _) = Nhs.fill_ball start_pt max_float r start_pt in
+    let fill_time = Sys.time () -. start_time in
+    printf "Fill time: %f secs.\n" fill_time;
+    let settings = { P.default with
+      P.xorigin = 306;
+      P.yorigin = 396;
+      P.scale = 300.;
+    } in
+    P.plot_grid_in_disk fp settings (to_list grid);
+    output_string fp (sprintf "30 750 moveto (START POINT: %f + i%f) show\n" (fst start_pt) (snd start_pt));
+    output_string fp (sprintf "30 735 moveto (THRESHOLD RADIUS: %f) show\n" r);
+    output_string fp (sprintf "30 720 moveto (NO. POINTS: %d) show\n" (Nhs.grid_size grid));
+    P.close_ps_file fp;
+    (r, Nhs.grid_size grid, fill_time)
+  in
+  Utils.halfplane_sl2z_use_lll := true;
+  printf "LLL is switched on.\n"; flush stdout;
+  let lll_pts = List.map handle_one_r r_list in
+(*
+  Utils.halfplane_sl2z_use_lll := false;
+  printf "LLL is switched off.\n"; flush stdout;
+  let no_lll_pts = List.map handle_one_r r_list in
+*)
+  let f_max x y = if x > y then x else y in
+  let graph_settings = { P.default_graph with
+(*
+    P.xmax = float_of_int (max_in_list_int (List.rev_map second_triple no_lll_pts));
+    P.ymax = f_max (max_in_list_float (List.rev_map third_triple lll_pts))
+                       (max_in_list_float (List.rev_map third_triple no_lll_pts));
+*)
+    P.xmax = float_of_int (max_in_list_int (List.rev_map second_triple lll_pts));
+    P.ymax = max_in_list_float (List.rev_map third_triple lll_pts);
+    P.ylabeloffsets = 22;
+    P.write_thresholds = true;  (* here "threshold" is actually the radius *)
+  } in
+  let fp = P.create_ps_file ("test/" ^ filename) in
+  let print_one_point (r, size, time) =
+    printf "(%f %d %f) " r size time
+  in
+  List.iter print_one_point lll_pts; printf "\n";
+  P.draw_graph fp graph_settings [(P.green, lll_pts)] "NO. OF POINTS" "TIME (s)";
+  P.close_ps_file fp
+(*   Printf.printf "%f\n" (sqrt (1./. (!Utils.small_vector_denom))) *)

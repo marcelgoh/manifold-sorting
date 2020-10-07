@@ -250,3 +250,30 @@ let plot_grid fp stgs grid_list =
   in
   List.iteri print_point grid_list;  (* print every point in the grid *)
   set_colour fp black
+
+let plot_grid_in_disk fp stgs grid_list =
+  let (r1, g1, b1) = stgs.colour1 in
+  let (r2, g2, b2) = stgs.colour2 in
+  let (xo, yo) = (stgs.xorigin, stgs.yorigin) in
+  let num_pts = float_of_int (List.length grid_list) in
+  output_string fp "gsave\n";
+  output_string fp (sprintf "%d %d translate\n0.5 setlinewidth\n" xo yo);
+  output_string fp "0 0 300 circle\n";  (* print the border of the unit disk *)
+  let print_point idx p =
+    (* this takes a triple from to_screen *)
+    let t = (float_of_int idx) /. num_pts in
+    let r = r1 +. (r2 -. r1) *. t in
+    let g = g1 +. (g2 -. g1) *. t in
+    let b = b1 +. (b2 -. b1) *. t in
+    if idx == 0 then
+      set_colour fp stgs.startcolour
+    else if idx == ((List.length grid_list) - 1) then
+      set_colour fp stgs.endcolour
+    else
+      set_colour fp (r, g, b);
+    draw_point fp stgs p
+  in
+  List.iteri print_point grid_list;  (* print every point in the grid *)
+  set_colour fp black;
+  output_string fp "grestore\n"
+

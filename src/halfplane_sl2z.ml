@@ -215,18 +215,17 @@ if verbose then Printf.printf "Minimum vector: (%f, %f)\t q2-value: %f\n" mv1 mv
       match c2 with
       | None -> []
       | Some (c2x, c2y) ->
-          let (v1x, v1y) = mat_vec_mul matB (a,c) in  (* standard basis so I don't get confused *)
+          let (v1x, v1y) = v1 in  (* standard basis so I don't get confused *)
           let (cx, cy) = mat_vec_mul matB (c2x, c2y) in
           let (bigA, bigB) = mat_vec_mul inv_matB (1.,0.) in
-          let fa = bigB*.v1y in
-          let fb = bigA*.v1y +. bigB*.cy in
-          if not (Float.is_integer fa) || not (Float.is_integer fb) then raise (Sl2z_error "One of a,b not integer.");
-          let a,b = int_of_float fa, int_of_float fb in
+          let a = int_of_float (bigB*.v1y) in
+          let b = int_of_float (bigA*.v1y +. bigB*.cy) in
           let (_,_,d) = gcd a bigN in
           if verbose then Printf.printf "a: %d  b: %d  d: %d\n" a b d;
           if verbose then Printf.printf "b1: (%f, %f)  b2: (%f, %f)  bigA: %f  bigB: %f\n" b1x b1y b2x b2y bigA bigB;
           if verbose then Printf.printf "v1: (%f, %f)  c: (%f, %f)\n" v1x v1y cx cy;
           let pair =
+            if a = 0 then (if b mod bigN = 0 then Some (0,1) else None) else
             if b mod d <> 0 then (
               if a = 0 && bigB*.cy = 0.0 then
                 Some (0, 1)
@@ -256,8 +255,8 @@ if verbose then Printf.printf "Minimum vector: (%f, %f)\t q2-value: %f\n" mv1 mv
                 let v2_candidate = (cx +. t'*.v1x, cy +. t'*.v1y) in
                 let (v21, v22) = v2_candidate in
                 let (g1, g2, g3, g4) = find_matrix b1 b2 v1 v2_candidate in
-                if verbose then (
-                  Printf.printf "t_cong: %d  min_t: %f  flor: %d  ceel %d\n" t_cong min_t flor ceel;
+                if int_of_float g3 mod bigN <> 0 then (
+                  Printf.printf "t_cong: %d  bigN': %d  min_t: %f  flor: %d  ceel %d\n" t_cong bigN' min_t flor ceel;
                   Printf.printf "here g: (%f, %f, %f, %f) from t = %d\n\n" g1 g2 g3 g4 t
                 );
                 let quadded = apply_quad q2 v2_candidate in
@@ -329,7 +328,7 @@ if verbose then Printf.printf "Minimum vector: (%f, %f)\t q2-value: %f\n" mv1 mv
         let (min_g, min_dist) = List.fold_left min' ((1.,0.,0.,1.), max_float) pairs in
         let (ga, gb, gc, gd) = min_g in
 (*         Printf.printf "b1: (%f, %f)\t b2: (%f, %f)\n" b1x b1y b2x b2y; *)
-        if verbose then Printf.printf
+        if true && int_of_float gc mod bigN <> 0 then Printf.printf
           "Dist. btw (%f, %f) and (%f, %f) is %f -- here gamma = (%f, %f, %f, %f). Small vector: %s.\n"
           x1 y1 x2 y2 min_dist ga gb gc gd (if very_small_vector_found then "true" else "false");
 (* Printf.printf "Trace: %f\n" (ga +. gd); flush stdout; *)
@@ -357,9 +356,8 @@ if verbose then Printf.printf "Minimum vector: (%f, %f)\t q2-value: %f\n" mv1 mv
     List.map (fun (x', y') -> (x +. (x' *. y), y *. y')) (offset_list r)
 
   let to_screen (x, y) r =
-    (x, y *. cosh r), (y *. sinh r), (x, y)
+(*     (x, y *. cosh r), (y *. sinh r), (x, y) *)
     (* translate into "standard" fundamental domain before printing *)
-(*
     let module C = Complex in
     let print_cplx z =
       Printf.printf "%f + i(%f)\n" z.C.re z.C.im
@@ -384,5 +382,4 @@ if verbose then Printf.printf "Minimum vector: (%f, %f)\t q2-value: %f\n" mv1 mv
     let x' = z'.C.re in
     let y' = z'.C.im in
     (x', y' *. cosh r), (y' *. sinh r), (x', y')
-*)
 end
