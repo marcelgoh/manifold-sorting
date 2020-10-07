@@ -8,6 +8,7 @@ module T = Test
 module H = Halfplane.Halfplane
 module N = Naive.Naive(H)
 module Hs = Halfplane_sl2z.Halfplane_sl2z
+module Hsoql = (val Halfplane_soql.halfplane_soql(fun (x, y, z) -> x ** 2. +. y ** 2. -. 3. *. z ** 2.))
 
 let _ =
 (*   T.run_para_test "kdandnaive" true *)
